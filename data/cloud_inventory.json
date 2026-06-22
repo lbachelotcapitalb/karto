@@ -1,0 +1,98 @@
+{
+ "_meta": {
+  "title": "",
+  "generated": "",
+  "sources": [],
+  "policy": ""
+ },
+ "vendorDomains": {
+  "_doc": "",
+  "Make": "",
+  "Anthropic": "",
+  "Claude": "",
+  "Tally": "",
+  "Gmail": "",
+  "Google": "",
+  "Supabase": "",
+  "Netlify": "",
+  "Cloudflare": "",
+  "GitHub": "",
+  "Hetzner": "",
+  "Resend": "",
+  "Qonto": "",
+  "Shopify": "",
+  "Mollie": "",
+  "Packlink": "",
+  "Airtable": "",
+  "Smoobu": "",
+  "Wix": "",
+  "APEC": "",
+  "Finstart": "",
+  "Bitwarden": "",
+  "Apple": "",
+  "SharePoint": "",
+  "Google Drive": "",
+  "Hostinger": "",
+  "IONOS": "",
+  "Microsoft 365": "",
+  "Microsoft": "",
+  "Outlook": "",
+  "Caddy": "",
+  "Gemini": "",
+  "OpenAI": "",
+  "Mistral": "",
+  "Playwright": "",
+  "Notion": "",
+  "Deepseek": ""
+ },
+ "domains": {
+  "_doc": "",
+  "list": []
+ },
+ "accounts": [],
+ "supabase": {
+  "account": "",
+  "projects": [],
+  "offAccount": []
+ },
+ "cloudflare": {
+  "account": "",
+  "domain": "",
+  "workers": 0,
+  "kvNamespaces": 0,
+  "d1Databases": 0,
+  "r2": "",
+  "note": ""
+ },
+ "make": {
+  "org": "",
+  "team": "",
+  "plan": "",
+  "scenarios": [],
+  "connections": [],
+  "webhooks": [],
+  "apiKeys": []
+ },
+ "github": {
+  "account": "",
+  "tokenScopes": "",
+  "repos": [],
+  "actions": [],
+  "note": ""
+ },
+ "googleDrive": {
+  "account": "",
+  "keyFolders": [],
+  "keySheets": [],
+  "serviceAccount": ""
+ },
+ "hetzner": {
+  "vps": "",
+  "workloads": []
+ },
+ "netlify": {
+  "account": "",
+  "sites": [],
+  "note": ""
+ }
+}

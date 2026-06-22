@@ -1,0 +1,34 @@
+name: ✨ Proposition de fonctionnalité
+description: Une idée pour améliorer karto.
+title: "[idée] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Le besoin
+      description: Quel problème concret ça résout ? Pour qui (novice, dev, les deux) ?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: La solution imaginée
+      description: À quoi ça ressemblerait, idéalement ?
+    validations:
+      required: true
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: Compatibilité avec les principes de karto
+      description: "Voir CONTRIBUTING.md. Coche ce que ta proposition respecte."
+      options:
+        - label: Local-first — aucune donnée ne quitte la machine, aucune télémétrie
+        - label: Zéro dépendance externe (Node natif + vanilla)
+        - label: Softcode — rien de spécifique à un utilisateur codé en dur
+        - label: Aucune valeur de secret ne transite jamais en clair
+  - type: textarea
+    id: alt
+    attributes:
+      label: Alternatives envisagées
+      description: As-tu pensé à d'autres approches ? (facultatif)

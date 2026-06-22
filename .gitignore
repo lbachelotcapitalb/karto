@@ -1,0 +1,14 @@
+# Artefacts régénérables / données — jamais versionnés
+/index.html
+karto.db
+karto.db-wal
+karto.db-shm
+.env
+.env.*
+*.env
+data/.bak/
+data/.bak*
+dist/
+site/
+public/
+.DS_Store

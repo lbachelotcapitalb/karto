@@ -1,0 +1,1142 @@
+{
+  "_doc": "Bibliothèque de mots-clés des automatisations (softcode). kindCat classe chaque type d'étape (k) dans une catégorie ; cat donne le libellé novice + icône de chaque catégorie ; outByKind donne le mot-clé d'output par défaut quand une étape n'a pas de champ `out` explicite. Édite librement — la synthèse « en clair » du popup se recalcule toute seule.",
+  "kindCat": {
+    "trigger": "trigger",
+    "code": "produce",
+    "ai": "produce",
+    "agent": "produce",
+    "script": "produce",
+    "store": "source",
+    "mirror": "source",
+    "api": "source",
+    "infra": "infra",
+    "publish": "deliver",
+    "notify": "deliver",
+    "check": "control",
+    "fallback": "safety"
+  },
+  "cat": {
+    "trigger": {
+      "label": "Déclencheurs",
+      "ico": "🕒",
+      "color": "#F59E0B"
+    },
+    "produce": {
+      "label": "Production",
+      "ico": "⚙️",
+      "color": "#A855F7"
+    },
+    "source": {
+      "label": "Sources & stockage",
+      "ico": "🗄️",
+      "color": "#0EA5E9"
+    },
+    "deliver": {
+      "label": "Diffusion / envoi",
+      "ico": "📤",
+      "color": "#EC4899"
+    },
+    "control": {
+      "label": "Contrôles",
+      "ico": "🔎",
+      "color": "#10B981"
+    },
+    "safety": {
+      "label": "Filets de sécurité",
+      "ico": "🛟",
+      "color": "#14B8A6"
+    },
+    "infra": {
+      "label": "Infrastructure",
+      "ico": "🖥️",
+      "color": "#64748B"
+    }
+  },
+  "flowLabel": "Transmet",
+  "outByKind": {
+    "trigger": "déclenchement",
+    "code": "contenu rédigé",
+    "ai": "contenu généré",
+    "agent": "actions enchaînées",
+    "script": "fichier produit",
+    "store": "données enregistrées",
+    "mirror": "copie lisible",
+    "api": "données externes",
+    "publish": "message envoyé",
+    "notify": "notification envoyée",
+    "check": "vérification",
+    "fallback": "relance de secours"
+  },
+  "_natureDoc": "Détection de la NATURE d'une automatisation par mots-clés trouvés dans son nom + son `does` (premier match gagne, du plus spécifique au plus générique). Donne le tag affiché, le nom d'objet et un verbe d'action. Évite d'avoir à taguer chaque tâche à la main. Source : vocabulaire réel des automatisations karto.",
+  "nature": [
+    {
+      "kw": [
+        "watchdog",
+        "relance si",
+        "filet de"
+      ],
+      "tag": "Surveillance",
+      "object": "le bon déroulement",
+      "verb": "surveille"
+    },
+    {
+      "kw": [
+        "analytics",
+        "engagement",
+        "ouvertures",
+        "clics",
+        "taux d ouverture",
+        "resend-events",
+        "événement e-mail",
+        "evenement e-mail"
+      ],
+      "verb": "mesure",
+      "object": "l engagement des e-mails envoyés",
+      "tag": "Analytics"
+    },
+    {
+      "kw": [
+        "newsletter"
+      ],
+      "tag": "Newsletter",
+      "object": "la newsletter du jour",
+      "verb": "rédige"
+    },
+    {
+      "kw": [
+        "recrut",
+        "candidat",
+        "tally",
+        " cv"
+      ],
+      "tag": "Recrutement",
+      "object": "les candidatures",
+      "verb": "traite"
+    },
+    {
+      "kw": [
+        "keep-alive",
+        "keepalive",
+        "anti-pause",
+        "anti pause",
+        "ping rest"
+      ],
+      "tag": "Maintenance",
+      "object": "la base active",
+      "verb": "maintient"
+    },
+    {
+      "kw": [
+        "backup",
+        "sauvegarde",
+        "config-backup"
+      ],
+      "tag": "Sauvegarde",
+      "object": "les fichiers essentiels",
+      "verb": "sauvegarde"
+    },
+    {
+      "kw": [
+        "audit",
+        "sécur",
+        "secur",
+        "secret"
+      ],
+      "tag": "Audit",
+      "object": "le code",
+      "verb": "vérifie"
+    },
+    {
+      "kw": [
+        "autopush",
+        "git push",
+        "déploie",
+        "deploie",
+        "déploiement",
+        "deploy"
+      ],
+      "tag": "Déploiement",
+      "object": "le code",
+      "verb": "pousse"
+    },
+    {
+      "kw": [
+        "generator",
+        "génér de post",
+        "gener de post",
+        "post x",
+        "posts x",
+        "twitter",
+        "template x"
+      ],
+      "tag": "Génération de contenu",
+      "object": "des brouillons de publications",
+      "verb": "prépare"
+    },
+    {
+      "kw": [
+        "apec",
+        "offres",
+        "scan offre"
+      ],
+      "tag": "Veille emploi",
+      "object": "les offres d'emploi du jour",
+      "verb": "scanne"
+    },
+    {
+      "kw": [
+        "veille",
+        "missions",
+        "profils"
+      ],
+      "tag": "Veille",
+      "object": "la veille du jour",
+      "verb": "compile"
+    },
+    {
+      "kw": [
+        "contact",
+        "audience resend",
+        "liste de diffusion",
+        "mailing",
+        "abonn"
+      ],
+      "tag": "Contacts",
+      "verb": "synchronise",
+      "object": "la liste de diffusion"
+    },
+    {
+      "kw": [
+        "sync",
+        "synchron",
+        "comm-sync",
+        "communications"
+      ],
+      "tag": "Synchronisation",
+      "object": "les données",
+      "verb": "synchronise"
+    },
+    {
+      "kw": [
+        "orchest",
+        "bureau",
+        "supervis",
+        "navigateur",
+        "vnc",
+        "chromium"
+      ],
+      "tag": "Infrastructure",
+      "object": "le bureau distant à piloter",
+      "verb": "démarre"
+    },
+    {
+      "kw": [
+        "réception webhook",
+        "reception webhook",
+        "webhook entrant",
+        "inscription",
+        "subscribe",
+        "formulaire d inscription"
+      ],
+      "tag": "Réception",
+      "verb": "capte",
+      "object": "les soumissions entrantes"
+    },
+    {
+      "kw": [
+        "notif",
+        "alerte",
+        "alerting",
+        "slack"
+      ],
+      "tag": "Notification",
+      "verb": "alerte",
+      "object": "sur les événements importants"
+    },
+    {
+      "kw": [
+        "scoring",
+        "matching",
+        "embedding",
+        "embed ",
+        "ranking",
+        "pertinence"
+      ],
+      "tag": "Scoring",
+      "verb": "score",
+      "object": "les éléments par pertinence"
+    },
+    {
+      "kw": [
+        "crawl",
+        "scrape",
+        "scraping",
+        "sourcing web",
+        "fetch web"
+      ],
+      "tag": "Collecte web",
+      "verb": "collecte",
+      "object": "les sources du web"
+    },
+    {
+      "kw": [
+        "render",
+        "rendu html",
+        "mise en forme",
+        "templating"
+      ],
+      "tag": "Rendu",
+      "verb": "met en forme",
+      "object": "le document"
+    },
+    {
+      "kw": [
+        "digest",
+        "reporting",
+        "rapport quotidien",
+        "report "
+      ],
+      "tag": "Reporting",
+      "verb": "compile",
+      "object": "le rapport du jour"
+    },
+    {
+      "kw": [
+        "inventaire",
+        "collecteur",
+        "profil matériel",
+        "system_profiler",
+        "appareils",
+        "snapshot métadonnées"
+      ],
+      "tag": "Inventaire",
+      "verb": "inventorie",
+      "object": "le parc et ses métadonnées"
+    }
+  ],
+  "_phraseDoc": "Briques de langage pour générer la phrase « en clair » (aucune phrase écrite à la main). produceByKind = verbe par défaut de l'étape de production (si la nature n'en impose pas) ; le reste = connecteurs.",
+  "phrase": {
+    "produceByKind": {
+      "code": "rédige",
+      "ai": "génère",
+      "agent": "orchestre",
+      "script": "exécute",
+      "api": "traite",
+      "store": "enregistre",
+      "_default": "exécute",
+      "mirror": "recopie",
+      "publish": "diffuse",
+      "notify": "notifie",
+      "infra": "achemine",
+      "check": "vérifie"
+    },
+    "defaultObject": "sa tâche du jour",
+    "on": "sur",
+    "from": "à partir de",
+    "deliver": "puis l'envoie via",
+    "controlLead": "Filets",
+    "controlWord": {
+      "1": "contrôle",
+      "n": "contrôles"
+    },
+    "fallbackWord": {
+      "1": "secours",
+      "n": "secours"
+    },
+    "and": "et",
+    "fallbackActor": "le système",
+    "readsLead": "après avoir consulté",
+    "memoryGloss": "sa mémoire, pour ne pas se répéter",
+    "storeLead": "enregistré dans",
+    "renderLead": "mis en forme en",
+    "resultLead": "Le résultat est",
+    "deliverVia": "envoyé via",
+    "toAudience": "aux destinataires tenus à jour depuis",
+    "andThen": "puis"
+  },
+  "_cadenceDoc": "Bibliothèque de cadences (softcode) : traduit un planning brut (cron, launchd, texte) en phrase claire. `re` = motif (testé en insensible à la casse), 1er match gagne du plus spécifique au plus générique. Le parsing « tous les N jours » et l'heure restent dans le moteur. `default` = repli.",
+  "cadence": {
+    "rules": [
+      {
+        "re": "(webhook|imm[ée]diat|à chaque|aussit[ôo]t|\\bon (push|event)|événement|\\bpush\\b|pull request|\\bpr\\b|commit|formulaire|postul)",
+        "label": "À chaque événement"
+      },
+      {
+        "re": "(continu|polling|boucle infinie|daemon|nohup|toutes les \\d+\\s*s)",
+        "label": "En continu"
+      },
+      {
+        "re": "manuel",
+        "label": "Au lancement manuel"
+      },
+      {
+        "re": "((^|\\s)\\*/\\d+\\s+\\S+\\s|@hourly|toutes les heures|chaque heure)",
+        "label": "Plusieurs fois par jour"
+      },
+      {
+        "re": "(lun-?ven|jours? ouvr|en semaine|mon-?fri|\\*\\s+(1-5|1,2,3,4,5)\\s*$)",
+        "label": "Du lundi au vendredi"
+      },
+      {
+        "re": "(hebdo|weekly|chaque semaine|@weekly)",
+        "label": "Chaque semaine"
+      },
+      {
+        "re": "(mensuel|monthly|chaque mois|@monthly|^\\s*\\d+\\s+\\d+\\s+\\d+\\s+\\*\\s+\\*\\s*$)",
+        "label": "Chaque mois"
+      },
+      {
+        "re": "(\\bquotidien\\b|chaque jour|tous les jours|daily|@daily|^\\s*\\d+\\s+\\d+\\s+\\*\\s+\\*\\s+\\*\\s*$)",
+        "label": "Tous les jours"
+      }
+    ],
+    "everyNDays": "Tous les {n} jours",
+    "default": "Planifié"
+  },
+  "_triggerDoc": "Types de déclencheur / planification (pédagogie grand public, même motif que authTypes). On classe le `kind` technique d'un déclencheur vers un type par mots-clés. À enrichir au fil des cas.",
+  "triggerTypes": [
+    {
+      "kw": [
+        "cron"
+      ],
+      "plain": "Tâche planifiée Unix (crontab) : le serveur exécute la commande à heure fixe."
+    },
+    {
+      "kw": [
+        "launchd"
+      ],
+      "plain": "Planificateur natif macOS : lance la tâche à l'heure dite ou au démarrage du Mac."
+    },
+    {
+      "kw": [
+        "cowork"
+      ],
+      "plain": "Routine Claude Cowork : un agent Claude exécuté sur une planification."
+    },
+    {
+      "kw": [
+        "make.com",
+        "make"
+      ],
+      "plain": "Scénario Make (no-code) : un déclencheur (webhook / horloge) enchaîne des modules d'apps."
+    },
+    {
+      "kw": [
+        "github actions",
+        "github"
+      ],
+      "plain": "CI/CD GitHub : un workflow s'exécute sur événement (push, planning) dans le cloud GitHub."
+    },
+    {
+      "kw": [
+        "scripts ssh",
+        "ssh"
+      ],
+      "plain": "Lancement manuel : on se connecte au serveur en SSH et on lance le script à la main."
+    },
+    {
+      "kw": [
+        "manuel"
+      ],
+      "plain": "Déclenché à la main, sans planification."
+    }
+  ],
+  "triggerDefault": "Type de déclencheur / planification de la tâche.",
+  "_kindsDoc": "Taxonomie unifiée des TYPES D'ÉTAPE (k) — source de vérité unique : libellé + icône + pédagogie « novice ». Remplace les maps autrefois codées en dur (STEPICO/KINDLABEL/STEPHELP). `cat` (catégorie) et `out` (mot d'output) restent dans kindCat/outByKind. Le frontend lit ici, avec repli inline.",
+  "kinds": {
+    "trigger": {
+      "label": "Déclencheur",
+      "ico": "⏱️",
+      "plain": "Le point de départ : ce qui réveille la tâche (une horloge, un événement…)."
+    },
+    "script": {
+      "label": "Script",
+      "ico": "📜",
+      "plain": "Un petit programme qui s'exécute tout seul."
+    },
+    "code": {
+      "label": "Claude Code",
+      "ico": "🤖",
+      "plain": "Claude Code : un agent IA qui lit des consignes et agit avec des outils."
+    },
+    "ai": {
+      "label": "IA",
+      "ico": "✨",
+      "plain": "Un modèle d'IA génère ou analyse du contenu."
+    },
+    "agent": {
+      "label": "Agent IA",
+      "ico": "🧠",
+      "plain": "Un agent IA autonome qui enchaîne plusieurs actions."
+    },
+    "api": {
+      "label": "API",
+      "ico": "🔌",
+      "plain": "Se connecte à un service externe via son API."
+    },
+    "store": {
+      "label": "Stockage",
+      "ico": "🗄️",
+      "plain": "Écrit ou lit des données dans une base ou un fichier."
+    },
+    "notify": {
+      "label": "Notification",
+      "ico": "✉️",
+      "plain": "Envoie une notification ou un message."
+    },
+    "publish": {
+      "label": "Publication",
+      "ico": "📤",
+      "plain": "Publie / diffuse le résultat vers l'extérieur."
+    },
+    "mirror": {
+      "label": "Miroir",
+      "ico": "🪞",
+      "plain": "Recopie les données ailleurs pour les garder lisibles."
+    },
+    "infra": {
+      "label": "Serveur",
+      "ico": "🖥️",
+      "plain": "Une brique serveur qui tourne en arrière-plan."
+    },
+    "check": {
+      "label": "Contrôles",
+      "ico": "🔎",
+      "plain": "Vérifie que tout s'est bien passé (garde-fou)."
+    },
+    "fallback": {
+      "label": "Filet",
+      "ico": "🛟",
+      "plain": "Filet de secours si l'étape principale échoue."
+    }
+  },
+  "_tiersDoc": "Exécuteurs Claude (claudeTier) — libellé + couleur de badge + pédagogie. Remplace TIERLBL/TIERCLR/TIERHELP. Lu par le frontend, repli inline conservé.",
+  "tiers": {
+    "code": {
+      "label": "Claude Code",
+      "color": "#A855F7",
+      "plain": "Exécuté par Claude Code (agent CLI) : lit des consignes et agit avec des outils."
+    },
+    "cowork": {
+      "label": "Claude Cowork",
+      "color": "#38BDF8",
+      "plain": "Routine Claude Cowork planifiée."
+    },
+    "api": {
+      "label": "Claude (API)",
+      "color": "#FF4D8F",
+      "plain": "Appelle un modèle Claude via l'API (clé API), sans l'agent CLI."
+    }
+  },
+  "_toolsDoc": "Dictionnaire des outils/services : définition grand public (what) + forme employée dans une phrase (as). Clé = motifs (kw, regex) testés contre le nom du service. On enrichit ce dictionnaire au fil des nouveaux outils rencontrés — il se déverse dans le glossaire et les phrases du frontend.",
+  "tools": [
+    {
+      "kw": [
+        "hetzner"
+      ],
+      "label": "Hetzner",
+      "vendor": "Hetzner",
+      "as": "le serveur VPS Hetzner",
+      "what": "Hébergeur de serveurs : la machine en ligne qui fait tourner la chaîne en continu, 24h/24."
+    },
+    {
+      "kw": [
+        "claude code"
+      ],
+      "label": "Claude Code",
+      "vendor": "Anthropic",
+      "as": "l'IA Claude Code",
+      "what": "Service de l'IA Claude (Anthropic) qui lit des consignes, rédige du contenu, génère du code et pilote des agents."
+    },
+    {
+      "kw": [
+        "claude (api)",
+        "claude api"
+      ],
+      "label": "Claude (API)",
+      "vendor": "Anthropic",
+      "as": "l'IA Claude",
+      "what": "L'IA Claude d'Anthropic, appelée par clé d'API (à l'usage, facturée)."
+    },
+    {
+      "kw": [
+        "claude cowork"
+      ],
+      "label": "Claude Cowork",
+      "vendor": "Anthropic",
+      "as": "l'agent Claude Cowork",
+      "what": "Un agent Claude exécuté automatiquement sur une planification (routine Cowork)."
+    },
+    {
+      "kw": [
+        "claude",
+        "anthropic"
+      ],
+      "label": "Claude",
+      "vendor": "Anthropic",
+      "as": "l'IA Claude",
+      "what": "Anthropic fournit des services d'intelligence artificielle via son IA Claude."
+    },
+    {
+      "kw": [
+        "supabase"
+      ],
+      "label": "Supabase",
+      "vendor": "Supabase",
+      "as": "la base Supabase",
+      "what": "Base de données en ligne : stocke et sert les informations de la chaîne."
+    },
+    {
+      "kw": [
+        "google drive",
+        "drive"
+      ],
+      "label": "Google Drive",
+      "vendor": "Google",
+      "as": "Google Drive",
+      "what": "Espace de fichiers en ligne de Google."
+    },
+    {
+      "kw": [
+        "gmail"
+      ],
+      "label": "Gmail",
+      "vendor": "Google",
+      "as": "Gmail",
+      "what": "Messagerie e-mail de Google."
+    },
+    {
+      "kw": [
+        "sharepoint"
+      ],
+      "label": "SharePoint",
+      "vendor": "Microsoft",
+      "as": "SharePoint",
+      "what": "Espace documentaire de Microsoft 365 : ici, le fichier Excel qui contient la liste des contacts."
+    },
+    {
+      "kw": [
+        "github"
+      ],
+      "label": "GitHub",
+      "vendor": "GitHub",
+      "as": "GitHub",
+      "what": "Plateforme d'hébergement de code et d'automatisations (dépôts + exécutions automatiques dans le cloud)."
+    },
+    {
+      "kw": [
+        "resend"
+      ],
+      "label": "Resend",
+      "vendor": "Resend",
+      "as": "Resend",
+      "what": "Service d'envoi d'e-mails en nombre : diffuse la newsletter aux listes de contacts."
+    },
+    {
+      "kw": [
+        "make"
+      ],
+      "label": "Make",
+      "vendor": "Make",
+      "as": "Make",
+      "what": "Outil d'automatisation sans code qui enchaîne des actions entre applications."
+    },
+    {
+      "kw": [
+        "wix"
+      ],
+      "label": "Wix",
+      "vendor": "Wix",
+      "as": "Wix",
+      "what": "Créateur de sites web et ses outils de communication."
+    },
+    {
+      "kw": [
+        "apec"
+      ],
+      "label": "APEC",
+      "vendor": "APEC",
+      "as": "l'APEC",
+      "what": "Site d'offres d'emploi pour les cadres."
+    },
+    {
+      "kw": [
+        "apple",
+        "macos",
+        "launchd"
+      ],
+      "label": "macOS",
+      "vendor": "Apple",
+      "as": "le Mac",
+      "what": "Le système macOS d'Apple et son planificateur de tâches (launchd)."
+    },
+    {
+      "kw": [
+        "netlify"
+      ],
+      "label": "Netlify",
+      "vendor": "Netlify",
+      "as": "l’hébergement Netlify",
+      "what": "Hébergement de sites statiques : met en ligne les frontends (HTML/JS)."
+    },
+    {
+      "kw": [
+        "caddy"
+      ],
+      "label": "Caddy",
+      "vendor": "Caddy",
+      "as": "le proxy Caddy",
+      "what": "Serveur web / reverse-proxy : route le trafic HTTPS vers les services internes du serveur."
+    },
+    {
+      "kw": [
+        "tally"
+      ],
+      "label": "Tally",
+      "vendor": "Tally",
+      "as": "le formulaire Tally",
+      "what": "Outil de formulaires en ligne : collecte les réponses et les inscriptions."
+    },
+    {
+      "kw": [
+        "cloudflare"
+      ],
+      "label": "Cloudflare",
+      "vendor": "Cloudflare",
+      "as": "Cloudflare",
+      "what": "Réseau/CDN et sécurité devant les services web (DNS, proxy, protection anti-abus)."
+    },
+    {
+      "kw": [
+        "ionos",
+        "1&1"
+      ],
+      "label": "IONOS",
+      "vendor": "IONOS",
+      "as": "IONOS",
+      "what": "Registrar / hébergeur DNS : gère les domaines et leurs enregistrements (MX, SPF, DKIM…)."
+    },
+    {
+      "kw": [
+        "bitwarden"
+      ],
+      "label": "Bitwarden",
+      "vendor": "Bitwarden",
+      "as": "le coffre Bitwarden",
+      "what": "Gestionnaire de mots de passe : stocke les secrets de façon chiffrée."
+    },
+    {
+      "kw": [
+        "gemini"
+      ],
+      "label": "Gemini",
+      "vendor": "Google",
+      "as": "l’IA Gemini",
+      "what": "L’IA Gemini de Google, pour des tâches génériques (jamais de données personnelles)."
+    },
+    {
+      "kw": [
+        "openai",
+        "gpt"
+      ],
+      "label": "OpenAI",
+      "vendor": "OpenAI",
+      "as": "l’IA OpenAI",
+      "what": "Modèles GPT d’OpenAI, appelés par API."
+    },
+    {
+      "kw": [
+        "mistral"
+      ],
+      "label": "Mistral",
+      "vendor": "Mistral",
+      "as": "l’IA Mistral",
+      "what": "Modèles d’IA de Mistral (éditeur européen)."
+    },
+    {
+      "kw": [
+        "playwright"
+      ],
+      "label": "Playwright",
+      "vendor": "Microsoft",
+      "as": "Playwright",
+      "what": "Automatisation de navigateur : pilote un navigateur pour tester ou extraire des pages."
+    },
+    {
+      "kw": [
+        "hostinger"
+      ],
+      "label": "Hostinger",
+      "vendor": "Hostinger",
+      "as": "le serveur Hostinger",
+      "what": "Hébergeur web (serveurs / VPS)."
+    },
+    {
+      "kw": [
+        "notion"
+      ],
+      "label": "Notion",
+      "vendor": "Notion",
+      "as": "Notion",
+      "what": "Espace de notes et bases de données collaboratif."
+    }
+  ],
+  "_authDoc": "Types d'authentification génériques (pédagogie grand public). On classe la phrase d'auth technique d'une étape vers un de ces types par mots-clés. À enrichir au fil des cas.",
+  "authTypes": [
+    {
+      "kw": [
+        "ssh"
+      ],
+      "label": "Accès serveur (SSH)",
+      "plain": "Connexion sécurisée et chiffrée à la machine serveur."
+    },
+    {
+      "kw": [
+        "github actions",
+        "runners"
+      ],
+      "label": "Exécution automatique (cloud)",
+      "plain": "Des tâches lancées automatiquement sur les serveurs de GitHub."
+    },
+    {
+      "kw": [
+        "service role",
+        "service_role",
+        "compte de service",
+        "service account",
+        "clé json",
+        "keyfile"
+      ],
+      "label": "Compte de service",
+      "plain": "Un compte « robot » dédié, avec sa propre clé, qui agit sans intervention humaine."
+    },
+    {
+      "kw": [
+        "oauth",
+        "device flow",
+        "délégué",
+        "delegue",
+        "consentement",
+        "msal",
+        "graph"
+      ],
+      "label": "Connexion déléguée (OAuth)",
+      "plain": "Un accès autorisé au nom d'un utilisateur, accordé une fois par consentement."
+    },
+    {
+      "kw": [
+        "abonnement",
+        "session",
+        "claude max",
+        "headless"
+      ],
+      "label": "Abonnement / session",
+      "plain": "Un compte connecté via un abonnement, sans clé technique à gérer."
+    },
+    {
+      "kw": [
+        "clé api",
+        "cle api",
+        "api key",
+        "api resend",
+        "api anthropic"
+      ],
+      "label": "Clé d'API",
+      "plain": "Un mot de passe technique qui autorise l'accès au service."
+    },
+    {
+      "kw": [
+        "git",
+        "dépôt",
+        "depot",
+        "repo"
+      ],
+      "label": "Accès au dépôt de code",
+      "plain": "Le droit de lire (ou écrire) le code dans le dépôt."
+    }
+  ],
+  "authDefault": {
+    "label": "Identifiants d'accès",
+    "plain": "Les identifiants nécessaires pour utiliser le service."
+  },
+  "_secretDoc": "Types de secrets génériques. On classe chaque référence de secret vers un type par mots-clés (jamais de valeur en clair, seulement la nature + l'emplacement).",
+  "secretTypes": [
+    {
+      "kw": [
+        "api_key",
+        "api key",
+        "clé api",
+        "cle api"
+      ],
+      "label": "Clé d'API",
+      "plain": "Mot de passe technique du service."
+    },
+    {
+      "kw": [
+        "service_role",
+        "sa_keyfile",
+        "keyfile",
+        ".json",
+        "compte de service"
+      ],
+      "label": "Clé de compte de service",
+      "plain": "Fichier-clé d'un compte robot."
+    },
+    {
+      "kw": [
+        "token",
+        "jeton",
+        "cache",
+        "refresh"
+      ],
+      "label": "Jeton d'accès",
+      "plain": "Jeton renouvelable obtenu après autorisation."
+    },
+    {
+      "kw": [
+        "database_url",
+        "connection",
+        "url"
+      ],
+      "label": "URL de connexion",
+      "plain": "Adresse + identifiants de la base."
+    },
+    {
+      "kw": [
+        "ssh"
+      ],
+      "label": "Clé SSH",
+      "plain": "Clé d'accès au serveur."
+    },
+    {
+      "kw": [
+        "audience"
+      ],
+      "label": "Identifiant de liste",
+      "plain": "Référence d'une liste de diffusion."
+    },
+    {
+      "kw": [
+        "session",
+        "abonnement",
+        "claude max",
+        "headless"
+      ],
+      "label": "Session d'abonnement",
+      "plain": "Un compte connecté via un abonnement, sans clé technique à gérer."
+    },
+    {
+      "kw": [
+        "dépôt",
+        "depot",
+        "repo",
+        "accès en lecture au dépôt",
+        "github"
+      ],
+      "label": "Accès au dépôt de code",
+      "plain": "Le droit de lire (ou écrire) le code dans le dépôt."
+    },
+    {
+      "kw": [
+        ".env",
+        "variable"
+      ],
+      "label": "Variable d'environnement",
+      "plain": "Secret rangé dans la configuration du serveur."
+    }
+  ],
+  "secretDefault": {
+    "label": "Secret",
+    "plain": "Information confidentielle d'accès."
+  },
+  "_stakeDoc": "Types de parties prenantes (pédagogie). type sur chaque partie prenante → libellé + explication génériques.",
+  "stakeholderTypes": {
+    "operator": {
+      "label": "Propriétaire / opérateur",
+      "plain": "La personne qui possède et pilote l'automatisation."
+    },
+    "admin": {
+      "label": "Administrateur",
+      "plain": "Accorde les autorisations techniques nécessaires."
+    },
+    "person": {
+      "label": "Personne impliquée",
+      "plain": "Un humain qui intervient dans la chaîne."
+    },
+    "audience": {
+      "label": "Liste de diffusion",
+      "plain": "Un groupe d'adresses e-mail qui reçoivent l'envoi."
+    },
+    "sender": {
+      "label": "Adresse d'expéditeur",
+      "plain": "L'adresse e-mail depuis laquelle part l'envoi."
+    }
+  },
+  "_reportDoc": "Libellés des rapports exportés (HTML client + Markdown migration). Tout softcode — modifie ici, jamais dans le moteur.",
+  "report": {
+    "title": "Rapport d'automatisation",
+    "subtitle": "Cartographie complète — chaîne, parties prenantes, comptes & accès",
+    "tagline": "solution IA de gestion IT",
+    "sections": {
+      "summary": "En clair",
+      "glossary": "Les outils en bref",
+      "triggers": "Déclencheurs & planification",
+      "chain": "Schéma de la chaîne",
+      "steps": "Étapes détaillées",
+      "stakeholders": "Parties prenantes",
+      "accounts": "Comptes & accès par connecteur",
+      "migration": "Migrer cette automatisation"
+    },
+    "cols": {
+      "step": "Étape",
+      "service": "Service",
+      "role": "Rôle",
+      "output": "Produit",
+      "account": "Compte",
+      "auth": "Authentification",
+      "secrets": "Secrets / accès",
+      "name": "Partie prenante",
+      "contact": "Référence",
+      "when": "Quand",
+      "what": "Action",
+      "tool": "Outil",
+      "what2": "À quoi ça sert",
+      "owner": "Propriétaire"
+    },
+    "none": "—",
+    "migrationIntro": "Pour reprendre cette automatisation dans un autre environnement, recréer chaque connecteur ci-dessous avec son compte, son authentification et ses secrets, puis recâbler les étapes dans l'ordre du schéma. Les secrets ne sont jamais inclus en clair : seules leurs références/emplacements sont listés.",
+    "migrateSteps": [
+      "Télécharger la feuille de route Markdown (bouton « Feuille de route Markdown » dans karto).",
+      "La confier à une IA (Claude, etc.) sur la nouvelle machine : elle contient le schéma, chaque connecteur, son compte, son authentification et ses secrets à recréer.",
+      "Recréer les comptes & accès listés, puis recâbler les étapes dans l'ordre du schéma ci-dessus.",
+      "Ce rapport HTML reste la version lisible pour un humain ; le Markdown est la feuille de route pour l'IA."
+    ],
+    "generatedBy": "karto",
+    "landscapeNote": "Document paysage — pensé pour l'impression A4 paysage / PDF."
+  },
+  "memoryKw": [
+    "mémoire",
+    "memoire",
+    "histor",
+    "anti-rép",
+    "anti-rep",
+    "topic_history",
+    "apprentissage_history",
+    "déjà vu",
+    "deja vu",
+    "anti-doublon",
+    "anti-répétition"
+  ],
+  "_badgesDoc": "Badges softcode des automatisations. Valeur explicite sur l’auto (a.dataSensitivity/a.residency/a.costModel) sinon inférée via kw (ou claudeTier pour le coût). Affichés dans le détail.",
+  "badges": {
+    "dataSensitivity": {
+      "pii": {
+        "label": "Données personnelles",
+        "emoji": "🔒",
+        "plain": "Manipule des données personnelles (emails, contacts, candidats) — RGPD applicable.",
+        "kw": [
+          "email",
+          "e-mail",
+          "contact",
+          "candidat",
+          "client",
+          "destinataire",
+          "abonn",
+          "audience",
+          "mailing",
+          " cv"
+        ]
+      },
+      "internal": {
+        "label": "Données internes",
+        "emoji": "🏢",
+        "plain": "Données internes, non personnelles."
+      },
+      "public": {
+        "label": "Données publiques",
+        "emoji": "🌐",
+        "plain": "Données publiques."
+      }
+    },
+    "residency": {
+      "eu": {
+        "label": "Données en UE",
+        "emoji": "🇪🇺",
+        "plain": "Données hébergées dans l’Union européenne.",
+        "kw": [
+          "eu-west",
+          "eu-central",
+          "europe",
+          "union européenne",
+          "paris",
+          "france",
+          "hetzner",
+          "ionos",
+          "scaleway",
+          "ovh",
+          "irlande",
+          "ireland",
+          "francfort",
+          "frankfurt",
+          "allemagne"
+        ]
+      },
+      "non-eu": {
+        "label": "Hors UE",
+        "emoji": "🌍",
+        "plain": "Données hébergées hors UE.",
+        "kw": [
+          "us-east",
+          "us-west",
+          "united states",
+          "états-unis",
+          "etats-unis",
+          " us "
+        ]
+      }
+    },
+    "costModel": {
+      "included": {
+        "label": "Inclus dans l’abonnement",
+        "emoji": "✅",
+        "plain": "Tourne sur un abonnement déjà payé — pas de coût à l’usage."
+      },
+      "usage": {
+        "label": "API payante à l’usage",
+        "emoji": "💳",
+        "plain": "Appelle une API facturée à l’usage.",
+        "kw": [
+          "clé api",
+          "api key",
+          "à l’usage",
+          "facturé",
+          "anthropic_api_key",
+          "openai",
+          "gpt-"
+        ]
+      },
+      "free": {
+        "label": "Gratuit",
+        "emoji": "🆓",
+        "plain": "Service gratuit."
+      }
+    }
+  },
+  "secStatus": {
+    "open": {
+      "label": "À traiter",
+      "emoji": "🔴",
+      "done": false
+    },
+    "mitigated": {
+      "label": "Atténué — reste à roter",
+      "emoji": "🟠",
+      "done": false
+    },
+    "closed": {
+      "label": "Clos",
+      "emoji": "🟢",
+      "done": true
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "_doc": "Classe les comptes du coffre Bitwarden par catégorie pour l'annuaire karto. Chaque catégorie = liste de motifs de domaine (sous-chaîne, insensible à la casse). Premier match gagne, dans l'ordre de 'ordre'. Non reconnu → dernière catégorie (Perso). 100% éditable : ajoute un motif pour reclasser un compte.",
+  "ordre": ["IT · Infra & Cloud", "IT · Outils & SaaS", "Business · Finance", "Business · Opérations", "Perso · Autre"],
+  "regles": {
+    "IT · Infra & Cloud": ["supabase", "github", "gitlab", "hetzner", "netlify", "cloudflare", "hostinger", "vercel", "render.com", "fly.io", "ovh", "scaleway", "digitalocean", "amazonaws", "aws.amazon", "bitwarden", "namecheap", "gandi", "wix.com", "porkbun"],
+    "IT · Outils & SaaS": ["anthropic", "claude", "openai", "chatgpt", "google.com", "accounts.google", "microsoftonline", "microsoft.com", "make.com", "integromat", "notion", "figma", "linear", "slack", "zapier", "airtable", "resend", "twilio", "postmark", "sentry", "vercel", "npmjs"],
+    "Business · Finance": ["qonto", "mollie", "shopify", "paypal", "stripe", "indy.fr", "binance", "kraken", "coinbase", "swisslife", "quantalys", "boursorama", "revolut", "wise.com", "bnpparibas", "credit-", "creditmutuel", "banque", "impots.gouv", "urssaf", " amundi", "linxea"],
+    "Business · Opérations": ["packlink", "smoobu", "airbnb", "booking.com", "docusign", "apec.fr", "finstart", "pole-emploi", "francetravail", "linkedin", "indeed", "malt.fr"]
+  }
+}
