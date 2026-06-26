@@ -1,0 +1,20 @@
+name: CI
+
+# Garde objective : vérifie que la base de connaissances et le dashboard se construisent sur
+# chaque PR vers main. Zéro dépendance (Node natif), aucun secret en CI : `--plain` ne chiffre rien.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node karto-db.mjs build      # construit karto.db depuis data/*.json
+      - run: node build.mjs --plain        # construit un dashboard de test (aucun secret)
