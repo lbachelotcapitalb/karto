@@ -80,6 +80,38 @@ Docs de référence : [`AGENTS.md`](AGENTS.md) (point d'entrée IA) · [`BACKEND
 - Pas de framework front : `template.html` est du HTML/CSS/JS vanilla assumé.
 - **Aucune valeur de secret** dans le code, les data, les tests, les commits. Jamais.
 
+## Garde ton fork à jour (anti-conflits)
+
+Resynchronise souvent pour éviter la dérive — plus ta branche vieillit, plus le merge fait mal :
+
+```bash
+git remote add upstream https://github.com/lbachelotcapitalb/karto.git   # une seule fois
+git fetch upstream && git rebase upstream/main
+```
+
+**Bonus** — pour que le `main` de ton fork se mette à jour tout seul, dépose ce workflow dans
+**ton fork** (`.github/workflows/sync-fork.yml`) :
+
+```yaml
+name: Sync fork
+on:
+  schedule:
+    - cron: "0 6 * * *"   # chaque jour à 6h UTC
+  workflow_dispatch:
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - run: gh repo sync ${{ github.repository }} --branch main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+> **Tu codes avec un assistant IA (Claude Code, Cursor…) ?** Pointe-le sur `CONTRIBUTING.md` et
+> `AGENTS.md` au début de ta session : il appliquera les 5 principes et les conventions tout seul.
+
 ## Bons premiers tickets
 
 Cherche le label **`good first issue`**. Quelques pistes ouvertes :
