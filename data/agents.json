@@ -1,0 +1,15 @@
+{
+ "_doc": "",
+ "_meta": {
+  "enums": {
+   "status": [],
+   "actionEffect": [],
+   "connectType": [],
+   "chainStatus": [],
+   "source": []
+  },
+  "entryShape": ""
+ },
+ "generated": "",
+ "agents": []
+}

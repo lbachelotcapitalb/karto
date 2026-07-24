@@ -1,0 +1,71 @@
+<svg viewBox="0 0 780 432" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" role="img" aria-label="Architecture de karto : tes sources deviennent une source de vérité unique, puis un dashboard chiffré et un cerveau interrogeable.">
+  <defs>
+    <marker id="ah" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#B9BCC8"/>
+    </marker>
+    <style>
+      .lbl{fill:#8A91A0;font-size:11px;font-weight:600;letter-spacing:.08em}
+      .title{fill:#0F1729;font-size:15px;font-weight:700}
+      .titles{fill:#0F1729;font-size:13.5px;font-weight:700}
+      .sub{fill:#5B6472;font-size:11.5px}
+      .chip{fill:#0F1729;font-size:12px;font-weight:600}
+      .arr{stroke:#B9BCC8;stroke-width:1.6;fill:none}
+      .ann{fill:#8A91A0;font-size:11px;font-style:italic}
+    </style>
+  </defs>
+
+  <!-- Band 1 : sources -->
+  <text x="390" y="14" text-anchor="middle" class="lbl">TON MONDE NUMÉRIQUE</text>
+  <g>
+    <rect x="20"  y="22" width="110" height="34" rx="9" fill="#F4F4F8" stroke="#E3E5EC"/>
+    <rect x="146" y="22" width="110" height="34" rx="9" fill="#F4F4F8" stroke="#E3E5EC"/>
+    <rect x="272" y="22" width="110" height="34" rx="9" fill="#F4F4F8" stroke="#E3E5EC"/>
+    <rect x="398" y="22" width="110" height="34" rx="9" fill="#F4F4F8" stroke="#E3E5EC"/>
+    <rect x="524" y="22" width="110" height="34" rx="9" fill="#F4F4F8" stroke="#E3E5EC"/>
+    <rect x="650" y="22" width="110" height="34" rx="9" fill="#F4F4F8" stroke="#E3E5EC"/>
+    <text x="75"  y="44" text-anchor="middle" class="chip">Comptes</text>
+    <text x="201" y="44" text-anchor="middle" class="chip">E-mails</text>
+    <text x="327" y="44" text-anchor="middle" class="chip">Projets</text>
+    <text x="453" y="44" text-anchor="middle" class="chip">Bases</text>
+    <text x="579" y="44" text-anchor="middle" class="chip">Automations</text>
+    <text x="705" y="44" text-anchor="middle" class="chip">Secrets</text>
+  </g>
+
+  <path class="arr" d="M390,58 L390,86" marker-end="url(#ah)"/>
+  <text x="402" y="76" class="ann">tu le décris une fois — ou karto le scanne</text>
+
+  <!-- Band 2 : source of truth -->
+  <rect x="140" y="90" width="500" height="60" rx="13" fill="#EEEDFD" stroke="#CFCBF7"/>
+  <text x="390" y="116" text-anchor="middle" class="title">data/ — ta source de vérité, unique</text>
+  <text x="390" y="136" text-anchor="middle" class="sub">texte clair, lisible · aucun mot de passe enregistré</text>
+
+  <path class="arr" d="M390,150 L390,180" marker-end="url(#ah)"/>
+  <text x="402" y="169" class="ann">karto construit, en local</text>
+
+  <!-- Band 3 : two outputs -->
+  <rect x="70" y="184" width="300" height="104" rx="13" fill="#FFFFFF" stroke="#E3E5EC"/>
+  <text x="90" y="214" class="titles">🔒  Tableau de bord chiffré</text>
+  <text x="90" y="238" class="sub">index.html — chiffré AES-256.</text>
+  <text x="90" y="256" class="sub">S'ouvre avec TA passphrase,</text>
+  <text x="90" y="274" class="sub">et rien d'autre. Copiable partout.</text>
+
+  <rect x="410" y="184" width="300" height="104" rx="13" fill="#FFFFFF" stroke="#E3E5EC"/>
+  <text x="430" y="214" class="titles">🧠  Cerveau interrogeable</text>
+  <text x="430" y="238" class="sub">karto.db — un graphe de tout</text>
+  <text x="430" y="256" class="sub">ton système, croisable par requête.</text>
+  <text x="430" y="274" class="sub">Zéro dépendance.</text>
+
+  <path class="arr" d="M220,288 L220,318" marker-end="url(#ah)"/>
+  <path class="arr" d="M560,288 L560,318" marker-end="url(#ah)"/>
+
+  <!-- Band 4 : who uses it -->
+  <rect x="70" y="322" width="300" height="60" rx="13" fill="#F4F4F8" stroke="#E3E5EC"/>
+  <text x="220" y="349" text-anchor="middle" class="titles">👤  Toi</text>
+  <text x="220" y="369" text-anchor="middle" class="sub">tu vois ta carte, en clair</text>
+
+  <rect x="410" y="322" width="300" height="60" rx="13" fill="#F4F4F8" stroke="#E3E5EC"/>
+  <text x="560" y="349" text-anchor="middle" class="titles">🤖  Ton IA</text>
+  <text x="560" y="369" text-anchor="middle" class="sub">tu lui parles en français (MCP)</text>
+
+  <text x="390" y="412" text-anchor="middle" class="ann">Aucune donnée ne quitte ta machine.</text>
+</svg>

@@ -1,0 +1,36 @@
+{
+  "_doc": "Vocabulaire softcode pour la pédagogie des skills (sous-section « Compétences » de l'onglet Automatisations). `family` = libellé + icône + couleur de chaque famille. `classify` = détection de la famille + verbe + objet d'un skill par mots-clés trouvés dans son name + summary (PAS le trigger, trop bruité : il cite des mots cross-domaine comme « vault »/« branche »). 1er match gagne, du plus spécifique au plus générique. La phrase « en clair » est composée côté dashboard (verbe + objet) — zéro texte figé par skill. Édite librement : la synthèse se recalcule toute seule au prochain rendu.",
+  "phrase": {
+    "triggerLead": "À utiliser quand"
+  },
+  "family": {
+    "secrets":    { "label": "Secrets & coffre",        "ico": "🔐", "color": "#10B981" },
+    "si":         { "label": "Cartographie du SI",       "ico": "🗺️", "color": "#0EA5E9" },
+    "contenu":    { "label": "Contenu & présentation",   "ico": "✍️", "color": "#EC4899" },
+    "patrimoine": { "label": "Patrimoine (CGP)",         "ico": "💼", "color": "#F59E0B" },
+    "dev":        { "label": "Dev & revue de code",      "ico": "🧪", "color": "#A855F7" },
+    "collab":     { "label": "Collaboration & sessions", "ico": "🤝", "color": "#14B8A6" }
+  },
+  "defaultFamily": { "label": "Autres outils", "ico": "🧩", "color": "#64748B" },
+  "defaultVerb": "aide sur",
+  "defaultObject": "une tâche spécifique",
+  "classify": [
+    { "kw": ["bitwarden", "coffre", "vault"],                          "family": "secrets",    "verb": "range",        "object": "un identifiant ou un token dans le coffre, sans frontend" },
+    { "kw": ["passphrase", "hidden-input", "champ masqué", "credential", "secret only the user", "mot de passe"], "family": "secrets", "verb": "fait saisir", "object": "un secret dans une fenêtre masquée, sans jamais le coller" },
+    { "kw": ["karto", "cartograph"],                                   "family": "si",         "verb": "tient à jour", "object": "la cartographie du SI (karto)" },
+    { "kw": ["database", "base de données", "modèle de données", "dictionnaire de données", "migrer"], "family": "si", "verb": "documente et fait migrer", "object": "une base de données (comprendre, visualiser, versionner, transmettre)" },
+    { "kw": ["pptx", "deck", "slide", "présentation", "powerpoint"],   "family": "contenu",    "verb": "construit",    "object": "des présentations soignées et structurées" },
+    { "kw": ["newsletter", "édition", "resend"],                       "family": "contenu",    "verb": "opère",        "object": "la chaîne newsletter quotidienne" },
+    { "kw": ["handoff", "session de travail", "machine à", "déléguer"], "family": "collab",     "verb": "passe",        "object": "une session de travail d'une machine à l'autre" },
+    { "kw": ["review", "contrib", "collaborateur", "merge", "audite"], "family": "dev",        "verb": "audite",       "object": "la contribution d'un collaborateur avant merge" },
+    { "kw": ["wealth", "patrimon", "cgp", "structuré", "assurance"],   "family": "patrimoine", "verb": "analyse",      "object": "des solutions patrimoniales (produits structurés, AV)" },
+    { "kw": ["bestfront", "harmonieux", "harmonie", "asymétrie", "boucle de qualité"], "family": "dev", "verb": "orchestre", "object": "la qualité du front (tokens, rendu, critique visuelle anti-asymétrie)" },
+    { "kw": ["playwright", "webapp-testing", "e2e", "tester", "test "], "family": "dev",       "verb": "teste",        "object": "des apps web en bout-à-bout (Playwright, screenshots, logs)" },
+    { "kw": ["frontend", "visual", "typograph", "aesthetic", "templated"], "family": "dev", "verb": "donne une direction", "object": "à une UI distinctive (palette, typo, motion) loin des défauts génériques d'IA" },
+    { "kw": ["composition", "compound component", "composant", "react 19", "render prop"], "family": "dev", "verb": "structure", "object": "des composants React qui scalent (composition, compound components)" },
+    { "kw": ["mcp", "model context protocol", "fastmcp"],             "family": "dev",        "verb": "construit",    "object": "des serveurs MCP bien conçus (outils, Python/Node)" },
+    { "kw": ["theme", "thème", "styling", "token"],                   "family": "contenu",    "verb": "applique",     "object": "un thème cohérent (couleurs, typo) à des artefacts" },
+    { "kw": ["semgrep", "vulnerab", "faille", "footgun", "secure default", "sécurit", "static analysis", "analyse statique", "sast", "dangerous config"], "family": "dev", "verb": "audite", "object": "la sécurité du code (failles, analyse statique, défauts non-sûrs)" },
+    { "kw": ["lighthouse", "core web vitals", "performance", "accessibilit", "wcag", "seo", "audit"], "family": "dev", "verb": "audite", "object": "la qualité web (perf, a11y, SEO, Lighthouse / Core Web Vitals)" }
+  ]
+}

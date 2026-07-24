@@ -1,0 +1,45 @@
+name: 🌱 Bon premier ticket (mainteneurs)
+description: Gabarit pour qu'un mainteneur cadre une tâche accessible à un nouveau contributeur.
+title: "[good first issue] "
+labels: ["good first issue", "help wanted"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gabarit destiné aux **mainteneurs** : il sert à découper une tâche claire, autonome et
+        accueillante pour quelqu'un qui découvre le projet. Plus c'est cadré, plus c'est pris.
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexte
+      description: En 2-3 phrases, le quoi et le pourquoi.
+    validations:
+      required: true
+  - type: textarea
+    id: task
+    attributes:
+      label: Ce qu'il y a à faire
+      description: Étapes concrètes, attendu vérifiable.
+    validations:
+      required: true
+  - type: input
+    id: files
+    attributes:
+      label: Fichiers concernés
+      placeholder: "ex. karto-collect.mjs, data/app_catalog.json"
+  - type: textarea
+    id: pointers
+    attributes:
+      label: Pour démarrer
+      description: Liens utiles, fonctions à regarder, commande de test.
+      value: |
+        - Lis `CONTRIBUTING.md` (les 5 principes) et `AGENTS.md`.
+        - Mise en place : `node karto-db.mjs build` puis `node karto-query.mjs schema`.
+        - Test : `node build.mjs --plain` doit produire un dashboard.
+  - type: dropdown
+    id: difficulty
+    attributes:
+      label: Difficulté estimée
+      options: ["Très accessible (quelques lignes)", "Accessible (une fonction)", "Modérée (un fichier)"]
+    validations:
+      required: true

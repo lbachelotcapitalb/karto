@@ -1,0 +1,21 @@
+[Unit]
+Description=karto-fs — API fichiers lecture seule pour karto (loopback, derrière Caddy)
+After=network.target
+
+[Service]
+Type=simple
+# Durci (audit 22/06) : user non-root éphémère + confinement applicatif aux racines autorisées.
+# KARTO_FS_ROOTS borne ce que l'API peut lire (défaut /srv/karto) ; mettre =/ pour tout le VPS (déconseillé).
+DynamicUser=yes
+Environment=KARTO_FS_ROOTS=/srv/karto
+ExecStart=/usr/bin/python3 /srv/karto/fs_server.py
+Restart=on-failure
+RestartSec=2
+# durcissement : aucun droit d'écriture, pas d'accès aux home
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,24 @@
+{
+ "_meta": {
+  "title": "",
+  "owner": "",
+  "generated": "",
+  "generatedAt": "",
+  "policy": ""
+ },
+ "host": {
+  "hostname": "",
+  "os": "",
+  "release": "",
+  "arch": "",
+  "node": ""
+ },
+ "runtimes": [],
+ "clis": [],
+ "projects": [],
+ "launchAgents": [],
+ "localDatabases": [],
+ "sshHosts": [],
+ "browsers": [],
+ "mcpServers": []
+}

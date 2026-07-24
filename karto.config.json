@@ -1,0 +1,155 @@
+{
+  "_doc": "Configuration SOFTCODE de karto. C'est le SEUL endroit où vivent l'identité et le périmètre de scan. Pour transmettre karto vierge à quelqu'un : vide data/*.json, remets owner à \"\", ajuste scan.projectRoots, et lance `node karto-collect.mjs && node karto-db.mjs build`. Aucune valeur Owner-spécifique n'est codée en dur ailleurs.",
+  "owner": {
+    "name": "",
+    "email": "",
+    "appleId": "",
+    "note": "Mettre name/email à \"\" pour une carte vierge — l'onglet Système et les valeurs owner ci-dessous disparaissent alors."
+  },
+  "agents": {
+    "_doc": "Architecture agentique (softcode). manifests[] = agent.json à ingérer par agents-collect.mjs → data/agents.json. Nourrir au fur et à mesure : ajoute une ligne quand un projet gagne un agent.json (schéma d'agent karto — cf. AGENTS.md). Les agents sans manifeste sont saisis à la main dans data/agents.json (source:'manual').",
+    "manifests": [
+      {
+        "id": "mon-agent",
+        "project": "mon-projet",
+        "path": "~/projets/mon-projet/agent.json"
+      }
+    ]
+  },
+  "vps": {
+    "_doc": "Collecte VPS (vps-collect.mjs) : alias SSH (~/.ssh/config) + nom de l'entité host dans karto. ignoreServices = plomberie systemd exclue de l'inventaire.",
+    "sshAlias": "",
+    "hostEntity": "Mon VPS",
+    "user": "",
+    "veilleHost": "",
+    "sourceId": "vps",
+    "veilleLog": "",
+    "veilleSourceId": "veille",
+    "ignoreServices": "^(ssh|sshd|cron|dbus|getty|polkit|rsyslog|unattended-upgrades|systemd-|networkd|resolved|logind|journald|udev|multipathd|packagekit|snapd|apparmor|thermald|irqbalance|ModemManager|networking|ifup|user@|serial-getty|atd|qemu-)"
+  },
+  "scan": {
+    "projectRoots": [
+      "~/Desktop",
+      "~/Documents/Claude/Projects"
+    ],
+    "launchAgents": "~/Library/LaunchAgents",
+    "maxDepth": 2,
+    "ignoreDirs": [
+      "node_modules",
+      ".git",
+      "dist",
+      "build",
+      ".next",
+      ".cache",
+      "vendor",
+      "__pycache__",
+      "Library"
+    ],
+    "dbFileExtensions": [
+      ".sqlite",
+      ".sqlite3",
+      ".db",
+      ".duckdb"
+    ],
+    "dbFileMaxDepth": 3
+  },
+  "clis": [
+    {
+      "bin": "gh",
+      "name": "GitHub CLI",
+      "auth": "gh auth status"
+    },
+    {
+      "bin": "supabase",
+      "name": "Supabase CLI",
+      "auth": "supabase projects list"
+    },
+    {
+      "bin": "netlify",
+      "name": "Netlify CLI",
+      "auth": "netlify status"
+    },
+    {
+      "bin": "vercel",
+      "name": "Vercel CLI",
+      "auth": "vercel whoami"
+    },
+    {
+      "bin": "wrangler",
+      "name": "Cloudflare Wrangler",
+      "auth": "wrangler whoami"
+    },
+    {
+      "bin": "bw",
+      "name": "Bitwarden CLI",
+      "auth": "bw status"
+    },
+    {
+      "bin": "docker",
+      "name": "Docker",
+      "auth": "docker info"
+    },
+    {
+      "bin": "flyctl",
+      "name": "Fly.io",
+      "auth": "flyctl auth whoami"
+    },
+    {
+      "bin": "aws",
+      "name": "AWS CLI",
+      "auth": "aws sts get-caller-identity"
+    },
+    {
+      "bin": "gcloud",
+      "name": "Google Cloud",
+      "auth": "gcloud auth list"
+    },
+    {
+      "bin": "doctl",
+      "name": "DigitalOcean",
+      "auth": "doctl account get"
+    },
+    {
+      "bin": "heroku",
+      "name": "Heroku",
+      "auth": "heroku auth:whoami"
+    }
+  ],
+  "runtimeBins": [
+    "node",
+    "npm",
+    "pnpm",
+    "bun",
+    "deno",
+    "python3",
+    "pip3",
+    "ruby",
+    "go",
+    "cargo",
+    "rustc",
+    "java",
+    "php"
+  ],
+  "browsers": [
+    {
+      "name": "Google Chrome",
+      "app": "/Applications/Google Chrome.app"
+    },
+    {
+      "name": "Arc",
+      "app": "/Applications/Arc.app"
+    },
+    {
+      "name": "Brave Browser",
+      "app": "/Applications/Brave Browser.app"
+    },
+    {
+      "name": "Firefox",
+      "app": "/Applications/Firefox.app"
+    },
+    {
+      "name": "Safari",
+      "app": "/Applications/Safari.app"
+    }
+  ]
+}

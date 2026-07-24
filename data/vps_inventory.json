@@ -1,0 +1,24 @@
+{
+ "_meta": {
+  "title": "",
+  "host": "",
+  "generatedAt": "",
+  "policy": "",
+  "rootCrontab": ""
+ },
+ "hostInfo": [],
+ "crons": [],
+ "services": [],
+ "timers": [],
+ "optDirs": [],
+ "homeDirs": [],
+ "srvSites": [],
+ "caddySites": [],
+ "veille": [],
+ "costs": {
+  "period": "",
+  "tokens": [],
+  "apis": [],
+  "fixed": []
+ }
+}

@@ -1,0 +1,42 @@
+{
+ "_doc": "",
+ "canaux": {
+  "Bitwarden": {
+   "vendor": "",
+   "trust": "",
+   "remote": false,
+   "note": ""
+  },
+  "iCloud": {
+   "vendor": "",
+   "trust": "",
+   "remote": false,
+   "note": ""
+  },
+  "GitHub": {
+   "vendor": "",
+   "trust": "",
+   "remote": false,
+   "note": ""
+  },
+  "Hetzner": {
+   "vendor": "",
+   "trust": "",
+   "remote": false,
+   "note": ""
+  },
+  "Supabase": {
+   "vendor": "",
+   "trust": "",
+   "remote": false,
+   "note": ""
+  },
+  "Local (Mac)": {
+   "vendor": "",
+   "trust": "",
+   "remote": false,
+   "note": ""
+  }
+ },
+ "assets": []
+}

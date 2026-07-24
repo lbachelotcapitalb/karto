@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 🔐 Faille de sécurité
+    url: https://github.com/YOUR-ORG/karto/security/advisories/new
+    about: N'ouvre PAS d'issue publique pour une vulnérabilité. Signale-la en privé ici.
+  - name: 💬 Question / discussion
+    url: https://github.com/YOUR-ORG/karto/discussions
+    about: Pour une question d'usage ou une idée à débattre avant d'ouvrir une issue.

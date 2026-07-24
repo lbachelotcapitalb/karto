@@ -1,0 +1,38 @@
+{
+  "_doc": "Carto d'architecture CURÉE (style Ontologie/Growth) — le « jumeau numérique » de karto. Layout figé (softcode), CONTENU data-driven : chaque boîte porte un `match` qui pointe vers ses vrais nœuds du graphe (DATA.graph) → compte + liste en tooltip au survol. Coordonnées en espace virtuel 1040x560 (le renderer met à l'échelle). tone = clé de couleur (core/host/account/db/secret/project/connector/domain/auto/human/machine/semantic).",
+  "canvas": { "w": 1040, "h": 560 },
+  "boxes": [
+    { "id": "twin",     "label": "Jumeau numérique du SI",        "sub": "karto",                    "x": 400, "y": 16,  "w": 240, "h": 48, "tone": "core",     "match": { "all": true } },
+    { "id": "semantic", "label": "Sémantique",                    "sub": "graphe entités · relations","x": 300, "y": 96,  "w": 190, "h": 42, "tone": "semantic", "match": { "all": true } },
+    { "id": "kinetic",  "label": "Cinétique — actions",           "sub": "MCP · scénarios · OD",     "x": 550, "y": 96,  "w": 190, "h": 42, "tone": "semantic", "match": { "note": "Outils d'action : MCP karto (écriture), scénarios de résilience, écritures softcode." } },
+
+    { "id": "base",     "label": "Base unifiée",                  "sub": "karto.db (graphe interrogeable)", "x": 400, "y": 176, "w": 240, "h": 52, "tone": "core", "match": { "all": true } },
+
+    { "id": "hosts",    "label": "Hébergements",                  "x": 40,  "y": 150, "w": 170, "h": 40, "tone": "host",    "match": { "cat": "host" } },
+    { "id": "accounts", "label": "Comptes & identités",          "x": 40,  "y": 200, "w": 170, "h": 40, "tone": "account", "match": { "cat": "account" } },
+    { "id": "databases","label": "Bases de données",             "x": 40,  "y": 250, "w": 170, "h": 40, "tone": "db",      "match": { "cat": "db" } },
+    { "id": "secrets",  "label": "Secrets",                       "sub": "Bitwarden + coffre",       "x": 40,  "y": 300, "w": 170, "h": 40, "tone": "secret",  "match": { "special": "secrets" } },
+
+    { "id": "projects", "label": "Projets & apps",                "x": 830, "y": 176, "w": 170, "h": 40, "tone": "project",   "match": { "cat": "project" } },
+    { "id": "connectors","label": "Connecteurs / SaaS",          "x": 830, "y": 226, "w": 170, "h": 40, "tone": "connector", "match": { "cat": "connector" } },
+    { "id": "domains",  "label": "Domaines",                      "x": 830, "y": 276, "w": 170, "h": 40, "tone": "domain",    "match": { "cat": "domain" } },
+
+    { "id": "machine",  "label": "Exploitation machine",          "x": 330, "y": 268, "w": 180, "h": 44, "tone": "machine", "match": { "note": "Ce que la machine fait tourner : automatisations, agents, MCP." } },
+    { "id": "human",    "label": "Exploitation humaine",          "x": 550, "y": 268, "w": 180, "h": 44, "tone": "human",   "match": { "note": "Ce que TU consultes : dashboard, diagnostics, scénarios." } },
+
+    { "id": "autos",    "label": "Automatisations",               "sub": "crons · launchd · GHA · Make", "x": 150, "y": 360, "w": 175, "h": 42, "tone": "auto",    "match": { "cat": ["auto", "scenario", "webhook"] } },
+    { "id": "mcp",      "label": "MCP karto",                     "sub": "7 outils IA",              "x": 345, "y": 360, "w": 150, "h": 42, "tone": "connector", "match": { "idlike": "karto" } },
+    { "id": "dashboard","label": "Dashboard chiffré",             "sub": "carto · KPIs · sécurité",  "x": 515, "y": 360, "w": 165, "h": 42, "tone": "human",   "match": { "note": "Coffre AES-256 local : inventaire, comptes, sécurité, TIME, graphe, automatisations." } },
+    { "id": "diagnostics","label": "Diagnostics",                 "sub": "santé /100",               "x": 700, "y": 360, "w": 150, "h": 42, "tone": "human",   "match": { "note": "Score qualité + 6 dimensions (sécurité, secrets, sauvegarde, cycle, couverture, fraîcheur)." } },
+    { "id": "scenarios","label": "Scénarios",                     "sub": "résilience what-if",       "x": 870, "y": 360, "w": 150, "h": 42, "tone": "human",   "match": { "note": "Que casse-t-il si X tombe : impact, secrets à roter, coût." } }
+  ],
+  "arrows": [
+    ["semantic", "twin"], ["kinetic", "twin"],
+    ["hosts", "base"], ["accounts", "base"], ["databases", "base"], ["secrets", "base"],
+    ["projects", "base"], ["connectors", "base"], ["domains", "base"],
+    ["base", "semantic"], ["base", "kinetic"],
+    ["base", "machine"], ["base", "human"],
+    ["machine", "autos"], ["machine", "mcp"],
+    ["human", "dashboard"], ["human", "diagnostics"], ["human", "scenarios"]
+  ]
+}

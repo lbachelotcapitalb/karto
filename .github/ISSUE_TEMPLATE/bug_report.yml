@@ -1,0 +1,56 @@
+name: 🐛 Bug
+description: Quelque chose ne marche pas comme prévu.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci de signaler un bug. ⚠️ **Ne colle jamais de valeur de secret** (clé, mot de passe,
+        token) dans cette issue — karto n'en manipule pas, et nous non plus.
+  - type: textarea
+    id: what
+    attributes:
+      label: Que se passe-t-il ?
+      description: Décris le comportement observé, et ce que tu attendais à la place.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Étapes pour reproduire
+      placeholder: |
+        1. node karto-db.mjs build
+        2. node karto-query.mjs …
+        3. …
+    validations:
+      required: true
+  - type: input
+    id: node
+    attributes:
+      label: Version de Node
+      description: "Sortie de `node --version`"
+      placeholder: "v22.3.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Système
+      options: [macOS, Linux, Windows, Autre]
+    validations:
+      required: true
+  - type: dropdown
+    id: engine
+    attributes:
+      label: Moteur SQLite
+      description: "Donné par `node karto-query.mjs schema` (ou laisse 'je ne sais pas')."
+      options: ["node:sqlite (Node ≥ 22)", "binaire sqlite3 (Node 18/20)", "je ne sais pas"]
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / message d'erreur
+      description: Colle la sortie pertinente (caviarde tout identifiant personnel).
+      render: shell
