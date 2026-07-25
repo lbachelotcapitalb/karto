@@ -60,6 +60,7 @@ fourni par, héberge, lié, planifie, repo, scénario, stocké-sur, sur, tourne-
 - `BACKEND.md` — spec détaillée du backend requêtable.
 - `KARTO.md` — guide opérateur (rebuild/deploy, sync réalité, passphrase).
 - `README.md` — vues du dashboard + installation du serveur MCP (`node install-mcp.mjs`).
+- `agent.schema.json` — format d'un manifeste d'agent (`agent.json`) que karto cartographie.
 
 ## Écriture / curation (opt-in)
 
@@ -79,3 +80,34 @@ Règles d'écriture : **jamais de valeur de secret** (refus si motif token) ; en
 après une série d'écritures, appeler `karto_rebuild`. Le **visuel chiffré** n'est mis à jour
 qu'au rebuild du coffre (passphrase) — barrière humaine volontaire. Sert à **onboarder ce que le
 sync ne voit pas** : comptes SaaS, criticité, coût, dépendances, expositions.
+
+## Construire une carte depuis zéro — onboarding piloté par TOI, l'IA
+
+Quand l'utilisateur vient d'installer karto (carte quasi vide) ou te dit *« aide-moi à compléter
+ma carte »*, tu ne te contentes pas de répondre à des requêtes : **tu construis la carte avec lui**,
+en l'interviewant. La popup du dashboard affiche une **jauge de complétude** (0→100 %) tant que la
+colonne vertébrale n'est pas posée ; ton travail est de la faire monter jusqu'à 100 %.
+
+**La boucle (répète-la jusqu'à 100 %) :**
+
+1. **Lis l'état.** Appelle `karto_setup_status` (ou `node karto-query.mjs setup`). Tu obtiens
+   `{score, missing[], nextActions[]}` — exactement ce que voit la jauge (même source de vérité).
+2. **Interviewe**, un sujet manquant à la fois (ne noie pas l'utilisateur). Pour chaque `missing` :
+   pose une question simple en langage naturel, écoute, reformule pour confirmer **avant d'écrire**.
+   N'invente jamais une donnée ; si l'utilisateur ne sait pas, passe et note-le.
+3. **Écris** ce qu'il te donne :
+   - **Ton identité** → édite `karto.config.json` (`owner.name`). C'est un fichier, pas un outil MCP.
+   - **Comptes** → `karto_add_account`, ou guide-le vers `node vault-connect.mjs detect` (le coffre
+     renseigne comptes **et** emplacements de secrets d'un coup, sans jamais lire les valeurs).
+   - **Projet** → `karto_add_project` (name, hosting, stack…).
+   - **Hébergement** → via `karto_add_project {hosting}` / `karto_set_attribut {key:"hosting"}`, ou
+     un scan machine (`node karto-index.mjs`).
+   - **Emplacement de secret** → surtout via `vault-connect` ; jamais la **valeur**, seulement l'*où*.
+   - **Dépendance** → `karto_add_dependance {from, to}` : ce qui donne le « si ça tombe, quoi casse ».
+4. **Reconstruis** : `karto_rebuild` (met à jour `karto.db` ; le coffre chiffré, lui, se rebuild à
+   part avec la passphrase — barrière humaine).
+5. **Reboucle** : rappelle `karto_setup_status`. Le score a monté. Continue jusqu'à `complete:true`.
+
+Une fois à 100 %, invite à la **revue sécurité** (onglet « Sécurité & données » / `karto_exposures`) :
+secrets en clair, bases sans sauvegarde, comptes morts remontent là. La carte est vivante — on
+l'enrichit ensuite au fil de l'eau, jamais en une fois.

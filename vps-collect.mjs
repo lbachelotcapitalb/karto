@@ -2,8 +2,9 @@
 // vps-collect.mjs — collecteur du VPS (le pendant serveur de karto-collect.mjs).
 // UNE connexion SSH (alias softcode karto.config.json > vps.sshAlias), commandes LECTURE
 // SEULE côté user SSH (softcode vps.user) : crontab, services/timers systemd, /opt, home,
-// /srv. Le crontab ROOT n'est pas lisible sans sudo → tenté en sudo -n, sinon marqué
-// indisponible (l'export root viendra de l'agent de veille sécurité, s'il y en a un).
+// /srv. Le crontab ROOT n'est pas lisible sans sudo → tenté en sudo -n, puis relu via le
+// compte de DÉPLOIEMENT (vps.deployTarget) que karto détient déjà — aucun privilège
+// nouveau, lecture seule. Sinon marqué indisponible.
 //
 // Sécurité : chaque ligne collectée passe par redact() — un token embarqué dans une ligne
 // de cron est CAVIARDÉ, jamais écrit dans data/. Topologie/noms uniquement.
@@ -79,10 +80,33 @@ function parseCron(lines, user) {
   }
   return out;
 }
-const rootUnavailable = sec('CRON_ROOT').some(l => l.includes('__UNAVAILABLE__'));
+// Crontab root : `sudo -n` échoue si le compte de collecte n'a pas de sudo sans mot
+// de passe (c'est le cas ici, et c'est VOULU). Repli : on relit la crontab root par le
+// compte de DÉPLOIEMENT, que karto détient déjà pour publier le coffre — donc aucun
+// privilège nouveau, une seule commande, en lecture seule, et le résultat passe par le
+// même redact(). Sans deployTarget configuré, la section reste simplement indisponible.
+//
+// Pourquoi ça compte (25/07/2026) : tant que ce repli n'existait pas, karto ne voyait
+// AUCUN des 16 crons root du VPS — soit toute la chaîne newsletter, le carousel, le
+// recrutement et le planificateur LinkedIn. Un pan entier du SI était absent de la carte
+// sans que rien ne le signale, l'inventaire paraissant simplement « complet ».
+let rootLines = sec('CRON_ROOT');
+let rootUnavailable = rootLines.some(l => l.includes('__UNAVAILABLE__'));
+const DEPLOY_TARGET = V.deployTarget || process.env.KARTO_VPS_DEPLOY || '';
+if (rootUnavailable && DEPLOY_TARGET) {
+  try {
+    const out = execFileSync('ssh', ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10',
+      DEPLOY_TARGET, 'crontab -l 2>/dev/null'], { encoding: 'utf8', timeout: 30000 });
+    rootLines = out.split('\n').filter(l => l.trim() !== '').map(redact);
+    rootUnavailable = false;
+  } catch {
+    // Compte de déploiement injoignable : on garde l'état « indisponible », sans casser
+    // la collecte du reste (la disponibilité de l'inventaire prime sur l'exhaustivité).
+  }
+}
 const crons = [
   ...parseCron(sec('CRON_USER'), VUSER),
-  ...(rootUnavailable ? [] : parseCron(sec('CRON_ROOT'), 'root')),
+  ...(rootUnavailable ? [] : parseCron(rootLines, 'root')),
 ];
 
 const services = sec('SERVICES').map(s => s.replace(/\.service$/, '')).filter(s => !IGNORE.test(s));

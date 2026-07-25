@@ -129,7 +129,7 @@
 
   <!-- HERO -->
   <section class="hero">
-    <div class="pill">🔒 Chiffré · 100 % local · zéro serveur · open source</div>
+    <div class="pill">🔒 Chiffré · 100 % local · zéro serveur · source-available</div>
     <h1>Vois enfin <span class="g">tout ton monde numérique</span><br>sur une seule carte.</h1>
     <p class="sub">Tes comptes, tes e-mails, tes abonnements, tes mots de passe, tes petites automatisations… Aujourd'hui c'est éparpillé dans ta tête et dans 50 onglets. karto en fait une carte claire et chiffrée, qui ne quitte jamais ton ordinateur.</p>
 
@@ -329,14 +329,14 @@
 </div>
 
 <script>
-  // ⚠️ Placeholders — make-site.mjs injecte le vrai domaine/checksum/version au build du site.
-  var HOST = 'get.karto.app';
-  var REPO = 'https://github.com/YOUR-ORG/karto'; // dépôt public — ajuster si besoin
-  var SHA256 = '4165b2d07b62ee9dd7886202af470f4379a9a31a876f2e3437f0bdfd08920c6a'; // dist 0.1.0 (régénéré à chaque version)
-  var VERSION = '0.1.0';
+  // La distribution est servie par GitHub (aucun hébergement à monter) : script d'install en RAW,
+  // archive versionnée pour le téléchargement manuel. Le slug d'org est ajusté à la projection.
+  var REPO = 'https://github.com/lbachelotcapitalb/karto'; // dépôt public
+  var RAW  = 'https://raw.githubusercontent.com/lbachelotcapitalb/karto/main';
+  var ARCH = REPO + '/archive/refs/heads/main';
   var CMDS = {
-    unix: { html:'<span class="p">$</span> curl -fsSL https://'+HOST+'/install.sh | bash', raw:'curl -fsSL https://'+HOST+'/install.sh | bash', dl:'karto-'+VERSION+'.tar.gz' },
-    win:  { html:'<span class="p">PS&gt;</span> irm https://'+HOST+'/install.ps1 | iex', raw:'irm https://'+HOST+'/install.ps1 | iex', dl:'karto-'+VERSION+'.zip' }
+    unix: { html:'<span class="p">$</span> curl -fsSL '+RAW+'/install.sh | bash', raw:'curl -fsSL '+RAW+'/install.sh | bash', dl: ARCH+'.tar.gz' },
+    win:  { html:'<span class="p">PS&gt;</span> irm '+RAW+'/install.ps1 | iex', raw:'irm '+RAW+'/install.ps1 | iex', dl: ARCH+'.zip' }
   };
   var cur = 'unix';
   function pick(os){
@@ -344,7 +344,7 @@
     document.getElementById('t-unix').setAttribute('aria-selected', os==='unix');
     document.getElementById('t-win').setAttribute('aria-selected', os==='win');
     document.getElementById('cmd').innerHTML = CMDS[os].html;
-    document.getElementById('dl').setAttribute('href', 'https://'+HOST+'/'+CMDS[os].dl);
+    document.getElementById('dl').setAttribute('href', CMDS[os].dl);
     var c = document.getElementById('copy'); c.textContent = 'Copier'; c.classList.remove('done');
   }
   function copyCmd(){
@@ -352,8 +352,8 @@
       var c = document.getElementById('copy'); c.textContent = '✓ Copié'; c.classList.add('done');
     });
   }
-  document.getElementById('host').textContent = HOST;
-  document.getElementById('csum').textContent = 'sha256 ('+CMDS.unix.dl+') · '+SHA256;
+  var hostEl = document.getElementById('host'); if(hostEl) hostEl.textContent = 'github.com/lbachelotcapitalb/karto';
+  var csEl = document.getElementById('csum'); if(csEl) csEl.textContent = ''; // archive GitHub : pas de checksum publié à afficher
   ['repo','repo2','repo3'].forEach(function(id){ var el=document.getElementById(id); if(el) el.setAttribute('href', id==='repo2' ? REPO+'/blob/main/AGENTS.md' : REPO); });
   // détection OS : Windows → onglet Windows, sinon Unix
   pick(/Win/i.test(navigator.platform||navigator.userAgent) ? 'win' : 'unix');

@@ -9,7 +9,7 @@
 
 # karto
 
-### La carte de tout ton monde numérique — chiffrée, locale, libre.
+### La carte de tout ton monde numérique — chiffrée, locale, souveraine.
 
 Tes comptes, tes e-mails, tes abonnements, tes mots de passe, tes automatisations…
 **karto** en fait une carte claire et chiffrée, qui ne quitte jamais ta machine.
@@ -96,16 +96,40 @@ data/*.json ──┬──► build.mjs ──► index.html   (dashboard chiff
 
 ---
 
-## Démarrage rapide
+## Installer
 
 **Prérequis** : [Node.js](https://nodejs.org) ≥ 22 recommandé (ou Node 18/20 + le binaire
-`sqlite3`, présent d'origine sur macOS). Aucune autre dépendance.
+`sqlite3`, présent d'origine sur macOS). Aucune autre dépendance. Tout s'installe en espace
+utilisateur — un Node privé est posé dans `~/.karto` si besoin, **sans sudo**.
+
+**En une commande** (récupère karto + lance la première configuration) :
 
 ```bash
-git clone https://github.com/YOUR-ORG/karto.git
+# macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/lbachelotcapitalb/karto/main/install.sh | bash
+```
+
+```powershell
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/lbachelotcapitalb/karto/main/install.ps1 | iex
+```
+
+**Ou avec git** (pour explorer / contribuer) :
+
+```bash
+git clone https://github.com/lbachelotcapitalb/karto.git
 cd karto
 node karto-init.mjs        # choisit une passphrase, construit le coffre chiffré, l'ouvre
 ```
+
+**Ou demande à ton IA.** Colle ce prompt à Claude (ou ton assistant) :
+
+> Installe karto (https://github.com/lbachelotcapitalb/karto) sur ma machine : clone le dépôt,
+> lance `node karto-init.mjs` pour créer ma carte chiffrée, puis aide-moi à la remplir.
+
+**Ou télécharge et installe à la main** :
+[karto (.tar.gz)](https://github.com/lbachelotcapitalb/karto/archive/refs/heads/main.tar.gz) →
+décompresse → `node karto-init.mjs`.
 
 Ensuite :
 
@@ -178,10 +202,18 @@ respecte les cinq principes ci-dessus. Pour comprendre le modèle de données ra
 
 ## Sécurité
 
-Tu as trouvé une faille ? **N'ouvre pas d'issue publique.** Contacte les mainteneurs en privé.
-karto manipule de la topologie sensible : on prend les rapports au sérieux.
+Tu as trouvé une faille ? **N'ouvre pas d'issue publique** — utilise le canal privé de GitHub
+(*Security → Report a vulnerability*). La procédure et le périmètre sont détaillés dans
+[`SECURITY.md`](SECURITY.md). karto manipule de la topologie sensible : on prend les rapports au sérieux.
 
 ## Licence
 
-À définir (cible : licence open source permissive type MIT). En attendant, contacte les
-mainteneurs avant tout usage en production ou redistribution.
+**Source-available**, sous [licence PolyForm Noncommercial 1.0.0](LICENSE) : le code est ouvert et
+inspectable — c'est indissociable de la promesse *zero-knowledge* (tu dois pouvoir vérifier qu'aucun
+secret ne fuite) — et tu peux l'utiliser, le modifier et le redistribuer **pour tout usage non
+commercial**. Le seul usage réservé est la **revente ou l'exploitation commerciale** du logiciel.
+Pour un usage commercial, contacte les mainteneurs.
+
+> Ce n'est donc pas une licence « open source » au sens OSI (qui interdit toute restriction de
+> champ d'usage), mais une licence *source-available*. Une bascule vers une licence permissive
+> (type MIT) reste possible plus tard.

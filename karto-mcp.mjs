@@ -22,6 +22,7 @@ import { ingest, INGEST } from './karto-ingest.mjs';
 import { loadSources, ageDays, isStale } from './karto-sources.mjs';
 import { runDiagnostics } from './karto-diagnostics.mjs';
 import { runScenarios } from './karto-scenarios.mjs';
+import { scoreSetup, countsFromDb } from './karto-setup.mjs';
 
 // Écriture OPT-IN : le MCP est lecture seule par défaut. Active avec KARTO_MCP_WRITE=1.
 const WRITE = process.env.KARTO_MCP_WRITE === '1';
@@ -168,6 +169,15 @@ const TOOLS = {
     description: "Scénario de résilience « what-if » : si un socle tombe, qu'est-ce qui casse (rayon d'impact), quelles automatisations cassent, quels secrets sont à roter, quel coût/mois en jeu. Sans argument = tous les scénarios définis (data/scenarios.json) triés par ampleur ; avec name = un scénario (id/label) ou un nom de nœud ad-hoc.",
     inputSchema: { type: 'object', properties: { name: { type: 'string', description: "id/label d'un scénario, ou nom d'un nœud à faire tomber (ex. 'Hetzner VPS')" } } },
     run({ name }) { return runScenarios(__dir, name || null); }
+  },
+  karto_setup_status: {
+    description: "Complétude de la carte : où en est le remplissage (score 0→100 %, ce qui est posé, ce qui manque, prochaines actions). MÊME verdict que la jauge de la popup d'onboarding (source unique). POINT D'ENTRÉE pour CONSTRUIRE une carte quasi vide : appelle ceci → si score < 100 %, INTERVIEWE l'utilisateur sur les manques, puis remplis-les — outils d'édition data/*.json (karto_add_project, karto_add_account, karto_add_dependance, karto_add_data_asset, karto_set_attribut) ; comptes+secrets via `vault-connect` ; hôtes via les collecteurs ; owner.name s'édite dans karto.config.json — puis karto_rebuild → rappelle ceci. Reboucle jusqu'à 100 %.",
+    inputSchema: { type: 'object', properties: {} },
+    run() {
+      let ownerName = '';
+      try { ownerName = JSON.parse(readFileSync(join(__dir, 'karto.config.json'), 'utf8'))?.owner?.name || ''; } catch {}
+      return scoreSetup(countsFromDb(db, { ownerName }));
+    }
   }
 };
 
@@ -185,6 +195,20 @@ if (WRITE) {
     karto_rebuild: { description: 'Reconstruit la base requêtable karto.db après des écritures (le visuel chiffré reste derrière la passphrase).', inputSchema: { type: 'object', properties: {} }, run: () => { try { const out = execFileSync('node', [join(__dir, 'karto-db.mjs'), 'build'], { encoding: 'utf8' }); db = openDb(DB, { readOnly: true }); const m = out.match(/(\d+) entités.*?(\d+) liens/); return { ok: true, message: m ? `reconstruit — ${m[1]} entités, ${m[2]} liens` : 'reconstruit' }; } catch (e) { return { error: 'rebuild échoué: ' + (((e.stderr || e.message || '') + '').slice(0, 200)) }; } } }
   });
 }
+
+// ---------- ANNOTATIONS MCP (hints d'intention, spec 2025-06-18) ----------
+// Le client sait AVANT l'appel si un outil lit ou écrit : il peut auto-approuver toute
+// la lecture (le cas nominal de karto) et ne demander confirmation que sur les mutations.
+// Les 8 outils de base sont en lecture seule par construction (base ouverte readOnly) ;
+// les outils ajoutés par KARTO_MCP_WRITE=1 mutent data/*.json par merge idempotent —
+// additif, jamais de suppression, d'où destructiveHint:false.
+const READ_ONLY_TOOLS = new Set(['karto_schema', 'karto_search', 'karto_entity', 'karto_impact', 'karto_sql', 'karto_diagnostics', 'karto_discover', 'karto_scenario', 'karto_setup_status']);
+const annotationsFor = name => ({
+  readOnlyHint: READ_ONLY_TOOLS.has(name),
+  destructiveHint: false,
+  idempotentHint: true,          // lecture pure, ou merge idempotent côté écriture
+  openWorldHint: false,          // tout est local (karto.db + data/*.json)
+});
 
 // ---------- RESOURCES (données contextuelles lisibles par l'IA) ----------
 const RESOURCES = {
@@ -219,7 +243,7 @@ function handle(msg) {
   if (method === 'notifications/initialized' || method === 'notifications/cancelled') return; // notifications : pas de réponse
   if (method === 'ping') return reply(id, {});
   if (method === 'tools/list') {
-    return reply(id, { tools: Object.entries(TOOLS).map(([name, t]) => ({ name, description: t.description, inputSchema: t.inputSchema })) });
+    return reply(id, { tools: Object.entries(TOOLS).map(([name, t]) => ({ name, description: t.description, inputSchema: t.inputSchema, annotations: annotationsFor(name) })) });
   }
   if (method === 'tools/call') {
     const name = params && params.name; const args = (params && params.arguments) || {};

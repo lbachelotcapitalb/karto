@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { runDiagnostics } from './karto-diagnostics.mjs';
 import { keyIdOf, KEYFILE } from './karto-kid.mjs';
+import { scoreSetup, countsFromDb } from './karto-setup.mjs';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
@@ -148,7 +149,7 @@ for (const d of ((cloud.domains && cloud.domains.list) || [])) {
 }
 
 // bases supabase
-for (const db of cloud.supabase.projects) { N('db:' + db.ref, 'SB ' + db.name, 'db', `${db.region} · ${db.status}`); E('db:' + db.ref, 'acc:sb-bcapital', 'héberge'); }
+for (const db of cloud.supabase.projects) { N('db:' + db.ref, 'SB ' + db.name, 'db', `${db.region} · ${db.status}`); E('db:' + db.ref, 'acc:sb-Mon Organisation', 'héberge'); }
 for (const db of (cloud.supabase.offAccount || [])) { N('db:' + db.name, 'SB ' + db.name, 'db', db.note); E('db:' + db.name, 'acc:sb-autre', 'héberge'); }
 
 // projets + liens intégrations -> comptes/services (résolution data-driven, parité avec karto-db.mjs) :
@@ -340,6 +341,14 @@ try {
     relations: q("SELECT rel AS k, COUNT(*) n FROM edge GROUP BY rel ORDER BY n DESC, k"),
     tables
   };
+  // Complétude de la carte (jauge de la popup d'onboarding) — PRÉCALCULÉE ici avec le MÊME code que
+  // le CLI `karto-query setup` et l'outil MCP `karto_setup_status` (karto-setup.mjs = source unique).
+  // Se met à jour à chaque rebuild : c'est ce que voit la popup au prochain « reopen » de la boucle.
+  try {
+    let ownerName = '';
+    try { ownerName = JSON.parse(readFileSync(join(__dir, 'karto.config.json'), 'utf8'))?.owner?.name || ''; } catch {}
+    model.setup = scoreSetup(countsFromDb(kdb, { ownerName }));
+  } catch (e) { console.error('  ⚠ complétude (setup) non calculée :', e.message); }
   // Business Units (kind business_unit) + membres rattachés → onglet BU
   try {
     const buRows = q("SELECT id,name,statut,criticite,attrs FROM entity WHERE kind='business_unit'");

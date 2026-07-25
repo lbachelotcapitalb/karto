@@ -281,7 +281,17 @@ if (vi) {
   // chaque ligne de cron réelle = entité vps_cron (nom = script + horaire) → détection des
   // automatisations qui tournent SANS être recensées (croisement avec kind automation).
   for (const c of (vi.crons || [])) {
-    const base = String(c.command || '').split(/\s+/).find(w => /\//.test(w)) || String(c.command || '').slice(0, 40);
+    // Nommer par le SCRIPT, pas par l'interpréteur : « /bin/bash /opt/x/gen_guard.sh »
+    // donnait l'entité « bash (root · */15 …) ». Deux crons de même horaire lancés par
+    // bash portaient alors le même slug et FUSIONNAIENT silencieusement en une entité
+    // (gen_guard + watchdog_guard, par ex.). On cherche donc d'abord un vrai script.
+    const words = String(c.command || '').split(/\s+/);
+    const INTERP = /^(\/usr)?(\/local)?\/bin\/(bash|sh|zsh|node|python3?|env|runuser)$/;
+    const base =
+      words.find(w => /\.(sh|mjs|js|py)$/.test(w)) ||
+      words.find(w => /\//.test(w) && !INTERP.test(w)) ||
+      words.find(w => /\//.test(w)) ||
+      String(c.command || '').slice(0, 40);
     const name = `${base.split('/').pop()} (${c.user} · ${c.schedule})`;
     const id = E('vps_cron:' + slug(c.user + '-' + base.split('/').pop() + '-' + c.schedule), 'vps_cron', name, {
       source: 'vps_inventory.json', statut: 'Actif', owner,

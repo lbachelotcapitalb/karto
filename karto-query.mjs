@@ -16,7 +16,8 @@
 
 import { DatabaseSync } from 'node:sqlite';
 import { checkReadOnlySql } from './karto-sqlite.mjs';
-import { existsSync } from 'node:fs';
+import { scoreSetup, countsFromDb } from './karto-setup.mjs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -137,7 +138,15 @@ Astuce IA : 'sql' est en lecture seule ; attrs est du JSON (json_extract(attrs,'
   }
   case 'exposures': out(db.prepare('SELECT severity, what, location, recommendation FROM exposure ORDER BY CASE severity WHEN \'critical\' THEN 0 WHEN \'high\' THEN 1 WHEN \'medium\' THEN 2 ELSE 3 END').all()); break;
   case 'bridges': out(db.prepare('SELECT id, kind, name, vendor, target, status, last_indexed, reach, schema_json FROM bridge ORDER BY kind, name').all().map(b => { try { b.reach = JSON.parse(b.reach); } catch {} if (b.schema_json) { try { b.schema = JSON.parse(b.schema_json); b.tables = (b.schema.tables || []).length; } catch {} } delete b.schema_json; return b; })); break;
+  case 'setup': {
+    // Complétude de la carte — MÊME verdict que la jauge de la popup (source unique : karto-setup.mjs).
+    // Point d'entrée de l'IA pour PILOTER le remplissage : lire ici → interviewer → écrire (karto-write) → rebuild → reboucler.
+    let ownerName = '';
+    try { ownerName = JSON.parse(readFileSync(join(__dir, 'karto.config.json'), 'utf8'))?.owner?.name || ''; } catch {}
+    out(scoreSetup(countsFromDb(db, { ownerName })));
+    break;
+  }
   default:
-    console.error('Commandes : schema | stats | search | entity | related | impact | sql | secrets | exposures | bridges\nCommence par : node karto-query.mjs schema');
+    console.error('Commandes : schema | stats | search | entity | related | impact | sql | secrets | exposures | bridges | setup\nCommence par : node karto-query.mjs schema');
     process.exit(1);
 }

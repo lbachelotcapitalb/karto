@@ -80,8 +80,11 @@ console.log('     Zero-knowledge : aucune récupération possible. Sans elle, ce
 console.log('     définitivement illisible (les données se reconstruisent, pas cet artefact).\n');
 
 // 5) build chiffré -----------------------------------------------------------
+// La passphrase passe par l'ENVIRONNEMENT (CARTO_PASS), jamais en ARGV : un argument de ligne de
+// commande est visible dans `ps`/`/proc` par tout autre processus de la machine — l'env d'un
+// enfant, non. build.mjs lit CARTO_PASS en repli de --passphrase (cf. build.mjs l. 28).
 console.log('  Génération du coffre chiffré…');
-const rb = spawnSync('node', [join(DIR, 'build.mjs'), '--passphrase', pass], { cwd: DIR, stdio: 'inherit' });
+const rb = spawnSync('node', [join(DIR, 'build.mjs')], { cwd: DIR, stdio: 'inherit', env: { ...process.env, CARTO_PASS: pass } });
 pass = null;                                            // on lâche la passphrase au plus vite
 if (rb.status !== 0) { console.error('  ✗ build échoué (voir ci-dessus).'); process.exit(1); }
 if (!existsSync(join(DIR, 'index.html'))) { console.error('  ✗ index.html non produit.'); process.exit(1); }

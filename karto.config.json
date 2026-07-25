@@ -16,16 +16,25 @@
       }
     ]
   },
+  "hosted": {
+    "url": "",
+    "authUser": "karto"
+  },
   "vps": {
-    "_doc": "Collecte VPS (vps-collect.mjs) : alias SSH (~/.ssh/config) + nom de l'entité host dans karto. ignoreServices = plomberie systemd exclue de l'inventaire.",
+    "_doc": "Collecte VPS (vps-collect.mjs) : sshAlias = compte NON PRIVILÉGIÉ en lecture seule. deployTarget = compte d'ÉCRITURE pour deploy/pull/restore (droits sur remotePath) — les deux sont volontairement distincts. hostEntity = nom de l'entité host dans karto. ignoreServices = plomberie systemd exclue de l'inventaire.",
     "sshAlias": "",
     "hostEntity": "Mon VPS",
     "user": "",
+    "host": "",
     "veilleHost": "",
     "sourceId": "vps",
     "veilleLog": "",
     "veilleSourceId": "veille",
-    "ignoreServices": "^(ssh|sshd|cron|dbus|getty|polkit|rsyslog|unattended-upgrades|systemd-|networkd|resolved|logind|journald|udev|multipathd|packagekit|snapd|apparmor|thermald|irqbalance|ModemManager|networking|ifup|user@|serial-getty|atd|qemu-)"
+    "ignoreServices": "^(ssh|sshd|cron|dbus|getty|polkit|rsyslog|unattended-upgrades|systemd-|networkd|resolved|logind|journald|udev|multipathd|packagekit|snapd|apparmor|thermald|irqbalance|ModemManager|networking|ifup|user@|serial-getty|atd|qemu-)",
+    "deployTarget": "",
+    "remotePath": "/srv/karto",
+    "publicPath": "/srv/karto-public",
+    "caddyConfig": "/etc/caddy/karto.caddy"
   },
   "scan": {
     "projectRoots": [
@@ -33,6 +42,8 @@
       "~/Documents/Claude/Projects"
     ],
     "launchAgents": "~/Library/LaunchAgents",
+    "_docExtraWorkflowRoots": "Dépôts à inspecter EN PLUS de ceux découverts par projectRoots (workflows GitHub Actions) : projets sans marqueur .git/package.json à leur racine, qui échappent au balayage.",
+    "extraWorkflowRoots": [],
     "maxDepth": 2,
     "ignoreDirs": [
       "node_modules",
