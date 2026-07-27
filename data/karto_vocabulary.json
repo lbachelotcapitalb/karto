@@ -1,0 +1,142 @@
+{
+  "_doc": "VOCABULAIRE FERMÉ de karto (roadmap D1, validé par Owner le 26/07/2026). Source de vérité UNIQUE des types d'entités, des relations et des valeurs contrôlées. Ce fichier n'est pas de la documentation : il est IMPORTÉ par karto-vocab.mjs, qui normalise à l'ingestion (karto-db.mjs) et qui GÉNÈRE les contraintes CHECK de karto.db. Éditer ici = changer le comportement du build. Ajouter une valeur au vocabulaire est un geste explicite ; une valeur inconnue est signalée par le build, jamais écrite en silence.",
+
+  "_regles": [
+    "Deux registres de casse, et pas un : les valeurs destinées à l'HUMAIN (statut, criticite, cycle, domaine, owner) sont Capitalisées accentuées — c'est déjà la clé des tables de couleurs du front (template.html CRIT/CYCLE) ; les valeurs destinées à la MACHINE (kind, rel, store, bridge.status, source.status, category, severity) sont des slugs minuscules sans accent.",
+    "Le vocabulaire couvre la SURFACE D'ÉMISSION du code, pas l'échantillon présent en base. Plusieurs valeurs ont 0 ligne aujourd'hui mais sont émissibles (fusionnée-dans, remplacée-par, se connecte·host, se connecte·runtime, bridge unreachable, cycle Migrer) : les omettre casserait le build le jour où elles résolvent.",
+    "Un `0` ou un NULL non mesuré ne s'écrit pas. criticite/cycle/domaine/owner acceptent NULL : ils ne sont renseignés que là où quelqu'un les a réellement décidés. Les remplir par défaut fabriquerait un chiffre non mesuré.",
+    "L'intention vit dans la carte (statut), l'état vient du système (attrs.lastStatus, attrs.probe). Ne jamais remettre une colonne d'état observé à côté de statut.",
+    "D2 — Les deux extrémités d'une arête RÉFÉRENCENT une entité (clé étrangère) et le triplet (src,dst,rel) est UNIQUE. Un nom libre qui ne résout pas est SIGNALÉ, jamais transformé en id fabriqué : l'idiome `ref(x) || 'project:'+slug(x)` produisait 5 arêtes vers des nœuds qui n'existent dans aucune source, invisibles parce que le build ne contrôlait que `dst`. Une arête absente se voit ; une arête pendante se croit.",
+    "D2 — AUCUNE relation n'est symétrique : chaque rel porte un `sens` orienté src → dst. Une paire réciproque de MÊME rel n'est donc pas deux faits, c'est un fait déclaré des deux bouts (ea_inventory : l'actif cite l'hôte, puis l'hôte re-cite l'actif). Le build garde la première déclaration et NOMME celle qu'il écarte. Un inverse VOULU s'exprime avec un rel différent (appartient / participation) et n'est pas touché."
+  ],
+
+  "kinds": {
+    "_doc": "17 types d'entités (25 avant D1). Chaque fusion transporte la distinction supprimée dans un attribut, elle ne la perd pas.",
+    "account": { "label": "Compte", "desc": "Identité chez un fournisseur. Absorbe l'ancien kind `service` : Supabase/GitHub/AWS/Gmail/Apple étaient des fournisseurs déjà présents ici.", "absorbe": ["service"] },
+    "agent": { "label": "Agent", "desc": "Agent déclaré dans data/agents.json. Socle de l'item E1 (identité runtime)." },
+    "automation": { "label": "Automatisation", "desc": "TOUT ce qui s'exécute sans intervention, quel que soit son lanceur. Le lanceur vit dans attrs.runner. Fusion décidée en D1 : tant que « cron du VPS » et « launchagent du Mac » étaient deux kinds, chaque fichier qui voulait parler d'automatisations redéclarait sa liste — et se trompait (4 listes divergentes mesurées, aucune n'incluait les 41 crons du VPS).", "absorbe": ["vps_cron", "launchagent", "scenario", "webhook"] },
+    "bridge": { "label": "Pont de données", "desc": "Base connectée et la façon de la requêter (data/bridges.json)." },
+    "business_unit": { "label": "Business Unit", "desc": "Ligne d'activité sous l'ombrelle déclarée dans business_units.json." },
+    "cli": { "label": "Outil en ligne de commande", "desc": "Binaire installé sur une machine. Absorbe `runtime` (node, python3, go…) : même nature, la distinction passe dans attrs.role ∈ runtime|cli.", "absorbe": ["runtime"] },
+    "connector": { "label": "Connecteur", "desc": "Serveur MCP ou connexion Make." },
+    "data_asset": { "label": "Actif de données", "desc": "Patrimoine de données et ses emplacements (data/data_assets.json)." },
+    "database": { "label": "Base de données", "desc": "Base Supabase, SQLite locale, IndexedDB." },
+    "domain": { "label": "Nom de domaine", "desc": "Domaine DNS et son registrar / DNS / email." },
+    "site": { "label": "Site web", "desc": "Propriété web sur laquelle on PUBLIE et dont on MESURE le SEO. Déclarée dans sites.json. Distincte de `domain` (un site peut en porter plusieurs : MonProjet.fr en prod, MonProjetadvisory.fr en refonte) et de `business_unit` (une ligne de revenu, pas une propriété web). Son `attrs.token` est la valeur EXACTE de la colonne `site` des tables comm_* de polar : c'est ce qui fait de « MonProjet » un identifiant joignable au lieu d'un fragment de nom." },
+    "ea_asset": { "label": "Actif EA (sans jumeau)", "desc": "OVERLAY de gouvernance, pas une catégorie technique. Quand un actif de ea_inventory.json trouve son jumeau technique, ses attributs (criticite/cycle/statut/cout/domaine) sont GREFFÉS sur l'entité réelle. Ce kind ne subsiste que pour les actifs qui n'ont réellement aucun jumeau (Anthropic, Google Workspace…)." },
+    "host": { "label": "Hôte", "desc": "Machine ou plateforme qui exécute. Absorbe `device` (le Mac) ; les alias SSH de l'ancien kind `ssh_host` étaient 3 chemins d'accès vers UNE machine, pas 3 hôtes — ils vivent dans attrs.sshAliases. Nature dans attrs.type ∈ laptop|vps|paas.", "absorbe": ["device", "ssh_host"] },
+    "person": { "label": "Personne", "desc": "Collaborateur (data/collaboration.json)." },
+    "project": { "label": "Projet", "desc": "Le CODE d'une application, sur disque." },
+    "repo": { "label": "Dépôt", "desc": "Dépôt Git distant." },
+    "skill": { "label": "Compétence", "desc": "Skill Claude Code (data/skills_inventory.json)." },
+    "workload": { "label": "Charge applicative", "desc": "Un DÉPLOIEMENT qui tourne (service systemd, site servi). Distinct de `project` (le code) et de `ea_asset` (la fiche de gouvernance)." }
+  },
+
+  "kindsFusionnes": {
+    "_doc": "Table de migration appliquée à l'ingestion par karto-vocab.mjs. `vers` = kind cible, `attr` = attribut qui porte la distinction supprimée.",
+    "vps_cron": { "vers": "automation", "attr": "runner", "valeur": "cron" },
+    "launchagent": { "vers": "automation", "attr": "runner", "valeur": "launchd" },
+    "scenario": { "vers": "automation", "attr": "runner", "valeur": "make" },
+    "webhook": { "vers": "automation", "attr": "runner", "valeur": "webhook" },
+    "service": { "vers": "account", "attr": "nature", "valeur": "fournisseur" },
+    "runtime": { "vers": "cli", "attr": "role", "valeur": "runtime" },
+    "device": { "vers": "host", "attr": "type", "valeur": "laptop" }
+  },
+
+  "runners": {
+    "_doc": "Lanceur d'une automatisation. Dérivé de la PROVENANCE quand elle est exacte (un cron du crontab est un cron, sans interprétation) ; deviné par mots-clés seulement pour les automatisations décrites en prose libre dans disk_inventory.json — et dans ce cas attrs.runnerInfere=true, pour qu'une supposition ne se lise jamais comme une mesure.",
+    "cron": "Ligne de crontab (VPS ou Mac).",
+    "launchd": "LaunchAgent / LaunchDaemon macOS.",
+    "make": "Scénario Make.com.",
+    "gha": "GitHub Actions.",
+    "webhook": "Déclenché par un appel HTTP entrant.",
+    "systemd": "Unité systemd (service ou timer).",
+    "hook": "Hook git ou hook Claude Code.",
+    "manuel": "Lancé à la main, pas de planificateur.",
+    "autre": "Lanceur non déterminé — à qualifier."
+  },
+
+  "rels": {
+    "_doc": "Relations autorisées sur edge.rel. `sens` documente la lecture src → dst : c'est ce qui a permis de voir que l'ancien `héberge` se lisait à l'envers (« la base héberge le compte »).",
+    "appartient": { "sens": "src appartient à dst", "desc": "Rattachement à une business unit ou à un compte propriétaire.", "absorbe": ["scénario"] },
+    "hébergé-chez": { "sens": "src est hébergé chez dst", "desc": "Remplace `héberge`, qui était émis dans le sens inverse de son libellé, et l'ancien rel `repo` (homonyme du kind `repo`, et qui pointait vers un compte).", "absorbe": ["héberge", "repo"] },
+    "tourne-sur": { "sens": "src s'exécute sur dst", "desc": "Machine ou plateforme d'exécution.", "absorbe": ["déployé", "sur"] },
+    "planifie": { "sens": "src planifie du travail sur dst", "desc": "Automatisation → projet qu'elle fait tourner." },
+    "déclenche": { "sens": "src déclenche dst", "desc": "Remplace `chaîne` : un agent qui enclenche une automatisation.", "absorbe": ["chaîne"] },
+    "utilise": { "sens": "src utilise dst", "desc": "Usage générique, assumé comme tel." },
+    "dépend de": { "sens": "src ne fonctionne pas sans dst", "desc": "Rayon d'impact.", "absorbe": ["fourni par"] },
+    "code": { "sens": "le code de src vit dans dst", "desc": "Projet → dépôt." },
+    "porté par": { "sens": "src est porté par dst", "desc": "Agent → projet/dépôt qui l'héberge." },
+    "stocké-sur": { "sens": "src est stocké sur dst", "desc": "Actif de données → emplacement." },
+    "sert-sur": { "sens": "src est servi sur le domaine dst", "desc": "Remplace le rel `domaine`, homonyme de la colonne `domaine`." },
+    "dns": { "sens": "le DNS de src est géré par dst", "desc": "Domaine → compte qui tient la zone." },
+    "email": { "sens": "l'email de src est géré par dst", "desc": "Domaine → fournisseur de messagerie." },
+    "collabore": { "sens": "src collabore sur dst", "desc": "Personne → dépôt." },
+    "participation": { "sens": "src détient une participation dans dst", "desc": "Holding → BU." },
+    "fusionnée-dans": { "sens": "src a été fusionnée dans dst", "desc": "Cycle de vie d'une BU. 0 ligne aujourd'hui, émissible par karto-db.mjs." },
+    "remplacée-par": { "sens": "src a été remplacée par dst", "desc": "Cycle de vie d'une BU. 0 ligne aujourd'hui, émissible." },
+    "se connecte·api": { "sens": "src appelle l'API de dst", "desc": "Connexion déclarée d'un agent." },
+    "se connecte·service": { "sens": "src se connecte au service dst", "desc": "Connexion déclarée d'un agent." },
+    "se connecte·datastore": { "sens": "src lit/écrit la base dst", "desc": "Connexion déclarée d'un agent." },
+    "se connecte·mcp": { "sens": "src parle au serveur MCP dst", "desc": "Connexion déclarée d'un agent." },
+    "se connecte·channel": { "sens": "src publie sur le canal dst", "desc": "Connexion déclarée d'un agent." },
+    "se connecte·repo": { "sens": "src travaille sur le dépôt dst", "desc": "Connexion déclarée d'un agent." },
+    "se connecte·host": { "sens": "src se connecte à la machine dst", "desc": "Connexion déclarée d'un agent. 0 ligne aujourd'hui (4 déclarées, non résolues)." },
+    "se connecte·runtime": { "sens": "src utilise le runtime dst", "desc": "Connexion déclarée d'un agent. 0 ligne aujourd'hui (2 déclarées, non résolues)." }
+  },
+
+  "relsSupprimes": {
+    "_doc": "Valeurs retirées du vocabulaire. Celles qui ont une cible sont re-typées à l'ingestion ; `lié` n'en a pas — c'était le fourre-tout de ea_inventory.json (34 arêtes sans sémantique), il est re-typé au cas par cas en D4 et, en attendant, émis en `utilise` avec attrs.aRetyper.",
+    "lié": { "vers": "utilise", "note": "34 arêtes à re-typer en D4 (marquées aRetyper)." },
+    "déployé": { "vers": "tourne-sur" },
+    "sur": { "vers": "tourne-sur" },
+    "scénario": { "vers": "appartient" },
+    "chaîne": { "vers": "déclenche" },
+    "héberge": { "vers": "hébergé-chez", "note": "Direction du libellé corrigée, pas les arêtes." },
+    "repo": { "vers": "hébergé-chez" },
+    "domaine": { "vers": "sert-sur" },
+    "fourni par": { "vers": "dépend de" }
+  },
+
+  "colonnes": {
+    "statut": {
+      "_doc": "SEULE colonne de cycle de vie, depuis la suppression de entity.status en D1. Dit l'INTENTION (« c'est censé tourner »), jamais l'état observé — celui-ci vit dans attrs.lastStatus / attrs.probe. NULL autorisé.",
+      "valeurs": ["Actif", "En pause", "À la demande", "Dev", "Partiel", "Structure", "Incubation"],
+      "note": "`Structure` et `Incubation` ne s'appliquent qu'aux business_unit : une société n'est pas « En pause ». Vocabulaire légitimement distinct, pas une dérive.",
+      "normalise": { "active": "Actif", "actif": "Actif", "ACTIVE_HEALTHY": "Actif", "structure": "Structure", "incubation": "Incubation", "arrêté": "En pause", "dormant": "En pause", "en pause": "En pause", "à la demande": "À la demande", "partiel": "Partiel", "dev": "Dev" }
+    },
+    "criticite": {
+      "_doc": "Gouvernance TIME. Réservée aux actifs réellement arbitrés — NULL autorisé, et c'est voulu : remplir 375 lignes d'un « Moyenne » par défaut fabriquerait un chiffre que personne n'a mesuré. Enum déjà déclaré dans data/ea_inventory.json _meta.criticite, repris tel quel.",
+      "valeurs": ["Critique", "Élevée", "Moyenne", "Faible"]
+    },
+    "cycle": {
+      "_doc": "Cycle de vie TIME. NULL autorisé, même raison. `Migrer` a 0 ligne mais est déclaré côté front et côté ea_inventory : il reste dans l'enum.",
+      "valeurs": ["Investir", "Tolérer", "Migrer", "Éliminer"]
+    },
+    "domaine": {
+      "_doc": "DOMAINE MÉTIER, jamais un nom DNS. Les 8 noms DNS trouvés (supabase.com, github.com…) venaient tous du kind `service` d'app_catalog.json, où `domaine` voulait dire « nom de domaine » : homonyme pur, déplacé vers `url`. NULL autorisé.",
+      "valeurs": ["Publishing & Newsletter", "Socle technique & Infra", "Gestion opérationnelle (retail/Apple)", "Création vidéo", "Veille & Sourcing", "Recrutement", "Orchestration d'agents", "Gestion de patrimoine", "Comptabilité & Fiscalité", "Opérations Mon Organisation"],
+      "ouvert": true,
+      "note": "ouvert=true : un domaine métier nouveau s'ajoute ici sans être un défaut. Le CHECK ne porte donc PAS sur domaine — il rejetterait une décision métier légitime. Le contrôle est un signalement au build (valeur ressemblant à un nom DNS)."
+    },
+    "owner": {
+      "_doc": "Propriétaire humain. Une seule graphie. Les 124 NULL RESTENT NULL : les remplir d'office serait faux au moins une fois (workload:publisher-x-MonAutreProjet relève de MonAutreProjet, pas de Owner). D4 les dérivera de l'arête `appartient → business_unit` quand elle existe.",
+      "valeurs": ["Owner"],
+      "ouvert": true,
+      "normalise": { "Owner": "Owner", "Owner": "Owner", "ton-user": "Owner" }
+    },
+    "store": {
+      "_doc": "Où vit la valeur d'un secret. Vocabulaire PARTAGÉ avec accounts[].ids[].store de data/cloud_inventory.json — c'est la même notion, elle ne doit pas diverger. `here` est documenté dans KARTO.md (valeur chiffrée dans le coffre karto) : il est GARDÉ.",
+      "valeurs": ["bw", "here", "none", "template"],
+      "sens": { "bw": "Référencé nommément dans Bitwarden.", "here": "Valeur chiffrée dans le coffre karto lui-même.", "none": "Pas retrouvé au coffre pour ce fichier — ne signifie PAS « n'existe nulle part ».", "template": "Fichier .example : il n'y a aucune valeur à ranger." },
+      "normalise": { "bitwarden": "bw", "bw": "bw", "vault": "bw" }
+    },
+    "category": { "_doc": "secret_ref.category.", "valeurs": ["secret", "critical"] },
+    "severity": { "_doc": "exposure.severity.", "valeurs": ["critical", "high", "medium", "low"] },
+    "bridgeStatus": {
+      "_doc": "Verdict de SONDAGE d'un pont — pas un cycle de vie, d'où sa table dédiée. `unreachable` a 0 ligne mais karto-bridge.mjs:206 peut l'écrire.",
+      "valeurs": ["indexed", "declared", "reachable", "unreachable", "absent", "not-indexable", "registered"]
+    },
+    "sourceStatus": { "_doc": "source.status (data/sources.json).", "valeurs": ["ok", "manual", "snapshot", "probe", "absent"] }
+  }
+}

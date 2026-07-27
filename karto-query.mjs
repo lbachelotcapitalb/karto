@@ -87,7 +87,7 @@ Astuce IA : 'sql' est en lecture seule ; attrs est du JSON (json_extract(attrs,'
     if (!rest.length) { console.error('usage: search <termes…>'); process.exit(1); }
     const where = rest.map(() => 'doc LIKE ?').join(' AND ');
     const params = rest.map(t => '%' + t.toLowerCase() + '%');
-    out(db.prepare(`SELECT id, kind, name, vendor, criticite, status, statut FROM entity WHERE ${where} ORDER BY kind, name LIMIT 60`).all(...params));
+    out(db.prepare(`SELECT id, kind, name, vendor, criticite, statut FROM entity WHERE ${where} ORDER BY kind, name LIMIT 60`).all(...params));
     break;
   }
   case 'entity': {

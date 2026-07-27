@@ -11,13 +11,23 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+// D1 — les chemins d'ÉCRITURE sont validés contre le vocabulaire fermé. Sans ça, le
+// verrou ne tiendrait que côté build : un agent appelant karto_add_dependance avec un
+// `rel` inventé écrirait dans dependencies.json, et c'est le build suivant qui casserait,
+// loin de la cause. On refuse à l'entrée, avec la liste des valeurs admises.
+import { RELS, VOCAB } from './karto-vocab.mjs';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const dp = f => join(__dir, 'data', f);
 const slug = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
 const canon = s => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
 // Motifs de credential connus (défense en profondeur — la vraie barrière reste le coffre chiffré + la revue de diff).
-const TOKEN = /(sk-[a-z0-9]{8}|sk_(live|test)_[a-z0-9]{8}|sbp_[a-z0-9]{8}|whsec_[a-z0-9]{8}|re_[a-z0-9]{8}|rk_(live|test)_[a-z0-9]{8}|ghp_[a-z0-9]{8}|gho_[a-z0-9]{8}|ghs_[a-z0-9]{8}|github_pat_[a-z0-9_]{20}|glpat-[a-z0-9_-]{16}|xox[baprs]-[a-z0-9-]{10}|AKIA[0-9A-Z]{12}|AIza[0-9A-Za-z_-]{30}|ya29\.[a-z0-9_-]{20}|npm_[a-z0-9]{30}|dop_v1_[a-f0-9]{32}|shpat_[a-f0-9]{32}|eyJ[A-Za-z0-9_-]{20}|-----BEGIN[A-Z ]*PRIVATE KEY-----|hook\.[a-z0-9.]*make\.com\/[a-z0-9]{20}|[a-z][a-z0-9+.-]*:\/\/[^\s:@/]+:[^\s:@/]+@)/i;
+// ⚠️ Le préfixe (?<![A-Za-z0-9_]) n'est PAS cosmétique : sans lui, les motifs courts matchent au
+// MILIEU d'un mot ordinaire. Constaté le 25/07/2026 en indexant un schéma Postgres — la colonne
+// « encad<re_missions> » déclenchait le motif de clé Resend (re_ + 8 caractères) et faisait refuser
+// toute l'ingestion. Un vrai jeton est toujours précédé d'un `=`, d'un espace, d'un guillemet ou
+// d'un début de chaîne, jamais d'une lettre : la détection ne perd rien, elle cesse de crier à tort.
+const TOKEN = /(?<![A-Za-z0-9_])(sk-[a-z0-9]{8}|sk_(live|test)_[a-z0-9]{8}|sbp_[a-z0-9]{8}|whsec_[a-z0-9]{8}|re_[a-z0-9]{8}|rk_(live|test)_[a-z0-9]{8}|ghp_[a-z0-9]{8}|gho_[a-z0-9]{8}|ghs_[a-z0-9]{8}|github_pat_[a-z0-9_]{20}|glpat-[a-z0-9_-]{16}|xox[baprs]-[a-z0-9-]{10}|AKIA[0-9A-Z]{12}|AIza[0-9A-Za-z_-]{30}|ya29\.[a-z0-9_-]{20}|npm_[a-z0-9]{30}|dop_v1_[a-f0-9]{32}|shpat_[a-f0-9]{32}|eyJ[A-Za-z0-9_-]{20}|-----BEGIN[A-Z ]*PRIVATE KEY-----|hook\.[a-z0-9.]*make\.com\/[a-z0-9]{20}|[a-z][a-z0-9+.-]*:\/\/[^\s:@/]+:[^\s:@/]+@)/i;
 // Blob opaque long (heuristique credential pour champs texte humains : 32+ caractères sans espace, classes mêlées).
 const GENERIC = /(?=[A-Za-z0-9+/_=-]*[A-Z])(?=[A-Za-z0-9+/_=-]*[a-z])(?=[A-Za-z0-9+/_=-]*[0-9])[A-Za-z0-9+/_=-]{32,}/;
 
@@ -73,6 +83,9 @@ export function setAttribut(o = {}) {
   const en = enums();
   if (key === 'cout') { value = Number(value); if (Number.isNaN(value)) return { error: 'cout doit être un nombre' }; }
   if (['criticite', 'cycle', 'type'].includes(key) && en[key].length && !en[key].includes(value)) return { error: `${key} doit être parmi: ${en[key].join(', ')}` };
+  // `statut` n'était PAS validé ici alors qu'il l'est en base depuis D1 : l'écriture aurait
+  // réussi et le build aurait échoué ensuite, sans dire d'où venait la valeur.
+  if (key === 'statut' && !VOCAB.colonnes.statut.valeurs.includes(value)) return { error: `statut doit être parmi: ${VOCAB.colonnes.statut.valeurs.join(', ')}` };
   const e = load('ea_inventory.json'); if (!e) return { error: 'ea_inventory.json illisible' };
   e.assets = e.assets || [];
   let a = e.assets.find(x => canon(x.name) === canon(name));
@@ -88,6 +101,7 @@ export function setAttribut(o = {}) {
 export function addDependance(o = {}) {
   const { from, to } = o; if (!from || !to) return { error: 'champs requis : from, to' };
   if (noSecret(from, to, o.rel, o.note)) return SECRET_ERR;
+  if (o.rel && !RELS.has(o.rel)) return { error: `rel « ${o.rel} » hors vocabulaire. Autorisés : ${[...RELS].join(', ')}` };
   const d = load('dependencies.json') || { deps: [] }; d.deps = d.deps || [];
   if (d.deps.some(x => canon(x.from) === canon(from) && canon(x.to) === canon(to))) return { ok: true, action: 'exists', file: 'dependencies.json' };
   d.deps.push({ from, to, ...(o.rel ? { rel: o.rel } : {}), ...(o.note ? { note: o.note } : {}) });
@@ -99,7 +113,7 @@ export function addDependance(o = {}) {
 export function addExposure(o = {}) {
   if (!o.what) return { error: 'champ requis : what' };
   if (noSecret(o.what, o.where, o.recommendation, o.owner)) return SECRET_ERR;
-  const sev = ['critical', 'high', 'medium', 'low'];
+  const sev = VOCAB.colonnes.severity.valeurs;   // même source que la contrainte CHECK
   if (o.severity && !sev.includes(o.severity)) return { error: `severity parmi: ${sev.join(', ')}` };
   const st = ['open', 'mitigated', 'closed'];
   if (o.status && !st.includes(o.status)) return { error: `status parmi: ${st.join(', ')}` };

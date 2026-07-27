@@ -28,7 +28,6 @@
   "Airtable": "",
   "Smoobu": "",
   "Wix": "",
-  "APEC": "",
   "Finstart": "",
   "Bitwarden": "",
   "Tailscale": "",
@@ -69,11 +68,13 @@
  },
  "cloudflare": {
   "account": "",
-  "domain": "",
-  "workers": 0,
-  "kvNamespaces": 0,
-  "d1Databases": 0,
+  "zones": [],
+  "nameservers": [],
+  "workers": [],
+  "kvNamespaces": "",
+  "d1Databases": "",
   "r2": "",
+  "pages": "",
   "note": ""
  },
  "make": {
@@ -97,7 +98,9 @@
   "keyFolders": [],
   "keySheets": [],
   "serviceAccount": "",
-  "vpsAccess": ""
+  "vpsAccess": "",
+  "keyFiles": [],
+  "note": ""
  },
  "hetzner": {
   "vps": "",
@@ -125,5 +128,11 @@
  "connectors": {
   "_doc": "",
   "list": []
+ },
+ "hostinger": {
+  "account": "",
+  "domains": [],
+  "dnsZonesAtRegistrar": [],
+  "note": ""
  }
 }

@@ -16,9 +16,23 @@
       }
     ]
   },
+  "skills": {
+    "_doc": "Collecte des skills (skills-collect.mjs). `dir` = où ils vivent. `backupRepos` = dépôts git où une COPIE du skill est versionnée quand son dossier d'origine n'est pas lui-même dans un dépôt (ici ~/.claude n'est pas un repo, mais backup.sh y recopie skills/ — c'est ce qui satisfait le principe A1 « tout skill vit dans un repo git »). Un skill qu'aucun des deux ne porte est SIGNALÉ à la collecte : c'est la seule façon de le voir.",
+    "dir": "~/.claude/skills",
+    "backupRepos": [
+      "~/claude-config"
+    ]
+  },
   "hosted": {
     "url": "",
     "authUser": "karto"
+  },
+  "updates": {
+    "_doc": "Notification de mise à jour pour les instances auto-hébergées. manifestUrl = UPSTREAM interrogé pour savoir si une MAJ existe (ICI : le VPS de Owner, publié par deploy-onepager.sh ; publier ce fichier = ce qui DÉCLENCHE la notif, d'où le rollout piloté). Le check est un simple GET (aucune donnée ne sort) ; check:false le désactive partout (bandeau in-app ET avis MCP). build.mjs bake ce bloc dans model.meta.updates (lu par le bandeau). ATTENTION : make-public RÉÉCRIT ce bloc dans la projection publique vers le GitHub raw du dépôt public — l'URL privée ci-dessous est un jeton SENSITIVE (fuite) et imposerait du CORS sur ce VPS. Un forkeur suit donc SON upstream GitHub.",
+    "check": true,
+    "manifestUrl": "https://raw.githubusercontent.com/lbachelotcapitalb/karto/main/version.json",
+    "changelogUrl": "https://github.com/lbachelotcapitalb/karto/blob/main/CHANGELOG.md",
+    "intervalHours": 24
   },
   "vps": {
     "_doc": "Collecte VPS (vps-collect.mjs) : sshAlias = compte NON PRIVILÉGIÉ en lecture seule. deployTarget = compte d'ÉCRITURE pour deploy/pull/restore (droits sur remotePath) — les deux sont volontairement distincts. hostEntity = nom de l'entité host dans karto. ignoreServices = plomberie systemd exclue de l'inventaire.",

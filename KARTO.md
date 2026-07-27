@@ -8,7 +8,7 @@
 Tableau de bord **autonome et chiffré** de tout le SI de Owner (architecture d'entreprise, style Boldo) :
 projets, comptes, bases, hébergements, automatisations, connecteurs, secrets, expositions de sécurité,
 + un inventaire d'actifs EA (criticité, cycle de vie TIME, coûts). Un seul `index.html` chiffré (AES-256,
-passphrase). Emplacement : **`/Users/you/Documents/Claude/Projects/cartographie-it/`**.
+passphrase). Emplacement : **`/Users/Owner/Documents/Claude/Projects/cartographie-it/`**.
 
 ## Source de vérité = les `data/*.json` (texte clair, sans valeurs de secrets)
 | Fichier | Contenu | Qui le met à jour |
@@ -23,6 +23,34 @@ passphrase). Emplacement : **`/Users/you/Documents/Claude/Projects/cartographie-
 | `data/skills_inventory.json` | Skills Claude auto-extraits → entités `kind:skill` + edges agent→skill dans karto.db | `skills-collect.mjs` |
 
 `index.html` est un **artefact rendu** depuis ces JSON. Les éditer ne suffit pas : il faut **rebuild**.
+
+## Vocabulaire fermé — `data/karto_vocabulary.json` (roadmap D1, 26/07/2026)
+**Source de vérité unique** des types d'entités, des relations et des valeurs contrôlées.
+Ce n'est pas de la documentation : le fichier est importé par `karto-vocab.mjs`, qui (1) normalise
+à l'ingestion, (2) **signale** toute valeur inconnue en fin de build, (3) **génère les contraintes
+CHECK** de `karto.db`. Éditer le JSON change le comportement du build — et rien d'autre à toucher.
+
+```bash
+node karto-vocab.mjs      # affiche le vocabulaire en vigueur + les CHECK générés
+```
+
+| Ce qui est fermé | Où |
+|---|---|
+| **17 kinds** (25 avant D1) | `entity.kind` — CHECK. `vps_cron`/`launchagent`/`scenario`/`webhook` → `automation` + `attrs.runner` ; `service` → `account` ; `runtime` → `cli` ; `device` → `host` ; les alias SSH → `attrs.sshAliases` de l'hôte |
+| **25 rel** | `edge.rel` — CHECK. `héberge`+`repo` → `hébergé-chez` (l'ancien libellé se lisait à l'envers), `domaine` → `sert-sur`, `chaîne` → `déclenche`, `lié`/`déployé`/`sur`/`scénario` re-typés |
+| `statut`, `criticite`, `cycle` | CHECK, NULL autorisé |
+| `store`, `category`, `severity`, `bridge.status`, `source.status` | CHECK |
+| `domaine`, `owner` | **enums ouverts** — pas de CHECK : une nouvelle ligne d'activité est une décision métier, pas un défaut |
+
+⚠️ **La colonne `entity.status` n'existe plus.** Elle empilait quatre vocabulaires (indexation d'un pont,
+auth d'un CLI, santé côté fournisseur, « en service ») et faisait doublon pur de `statut`. Règle :
+**l'intention vit dans `statut`, l'état observé vit dans `attrs`** (`lastStatus`, `probe`, `auth`,
+`providerHealth`). Ne pas réintroduire une colonne d'état à côté de `statut`.
+
+**« Ce qui s'exécute » a UNE définition** : `EXECUTABLE_KINDS` dans `karto-vocab.mjs`, importée par
+`karto-db`, `karto-scenarios`, `karto-diagnostics` et `gouvernance`. Avant D1 ces quatre fichiers
+portaient chacun sa liste, et trois d'entre elles ignoraient les 41 crons du VPS. Ne recopie jamais
+cette liste : importe-la.
 
 ## Backend requêtable — `karto.db` (voir `BACKEND.md`)
 Au-delà du dashboard, les `data/*.json` sont matérialisés dans une base SQLite **`karto.db`**
@@ -46,7 +74,7 @@ par le cron (garde-fou passphrase). ta veille de sécurité garde son audit quot
 
 ## Vérifier / mettre à jour (commandes)
 ```bash
-cd /Users/you/Documents/Claude/Projects/cartographie-it
+cd /Users/Owner/Documents/Claude/Projects/cartographie-it
 node karto-sync.mjs status     # fraîcheur + empreinte (lecture seule)
 node karto-sync.mjs audit      # DIFF réalité ↔ karto (gh + disque + Supabase si SUPABASE_ACCESS_TOKEN). N'écrit rien.
 node karto-sync.mjs apply      # applique les écarts AUTO-découvrables dans data/*.json (+ backup data/.bak)

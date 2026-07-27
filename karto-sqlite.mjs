@@ -55,7 +55,12 @@ class CliDb {
     if (!this.buf.length) return;
     // WAL échoue via le CLI sur un FS synchronisé (iCloud/réseau) → journal rollback classique.
     // (Sans effet sur le contenu ; node:sqlite garde WAL de son côté.)
-    const script = this.buf.join(';\n').replace(/journal_mode\s*=\s*WAL/gi, 'journal_mode = DELETE') + ';\n';
+    // D2 — les contraintes de clé étrangère sont OFF par défaut dans SQLite et se règlent PAR
+    // CONNEXION. Ici chaque flush est un process `sqlite3` neuf : un `PRAGMA foreign_keys = ON`
+    // posé une fois à la création du schéma ne survivrait pas au flush suivant, et les arêtes
+    // entreraient sans contrôle — la FK ne protégerait que sur Node ≥ 22. On la repose à
+    // chaque script pour que les deux moteurs appliquent la MÊME règle.
+    const script = 'PRAGMA foreign_keys = ON;\n' + this.buf.join(';\n').replace(/journal_mode\s*=\s*WAL/gi, 'journal_mode = DELETE') + ';\n';
     this.buf = [];
     execFileSync('sqlite3', [this.path], { input: script, encoding: 'utf8', maxBuffer: 1 << 28 });
   }
@@ -107,6 +112,12 @@ export function openDb(path, opts = {}) {
   if (DatabaseSync) {
     const db = new DatabaseSync(path, opts);
     if (typeof db.flush !== 'function') db.flush = () => {};   // no-op : API homogène avec le repli CLI
+    // D2 — SQLite désactive les clés étrangères PAR DÉFAUT, et le réglage vit sur la CONNEXION,
+    // pas dans le fichier. Une FK déclarée au schéma ne protège donc que les connexions qui
+    // pensent à l'activer : la poser ici, c'est la rendre vraie pour TOUT écrivain de karto.db
+    // (build, futur outil d'écriture, script de reprise) et pas seulement pour celui qui l'a
+    // écrite. En lecture seule c'est sans effet — et sans risque.
+    if (!opts.readOnly) { try { db.exec('PRAGMA foreign_keys = ON;'); } catch {} }
     db.engine = 'node:sqlite';
     return db;
   }

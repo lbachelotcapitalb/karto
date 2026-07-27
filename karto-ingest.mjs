@@ -136,12 +136,15 @@ export const INGEST = {
 
   runs: {
     source: 'runs-local',
-    mold: "{ runs:[{key: bout unique du nom de l'automatisation (convention automation_plain), last_run: ISO, status: 'ok'|'fail'|'stale', duration_s?, note?, source?: 'launchd'|'vps-cron'|'gha'|'make'}] } — merge par key → attrs.lastRun au build.",
+    mold: "{ runs:[{key: bout unique du nom de l'automatisation (convention automation_plain), status: 'ok'|'fail'|'stale', last_run?: ISO (facultatif — une panne peut être connue sans date), duration_s?, note?, log?: chemin du journal observé, source?: 'launchd'|'vps-cron'|'gha'|'make'}] } — merge par key → attrs.lastRun / lastStatus / log au build.",
     run(p = {}) {
       if (noSecret(p)) return SECRET_ERR;
       if (!Array.isArray(p.runs)) return { error: 'champ requis : runs[]' };
-      const bad = p.runs.find(r => !r.key || !r.last_run || !['ok', 'fail', 'stale'].includes(r.status));
-      if (bad) return { error: 'chaque run exige key, last_run (ISO), status ∈ ok|fail|stale — fautif : ' + JSON.stringify(bad).slice(0, 120) };
+      // last_run est FACULTATIF : un agent launchd non chargé (« Could not find service ») est
+      // une panne certaine sans date connue. L'exiger revenait à taire la panne la plus grave.
+      const bad = p.runs.find(r => !r.key || !['ok', 'fail', 'stale'].includes(r.status)
+        || (r.last_run != null && Number.isNaN(Date.parse(r.last_run))));
+      if (bad) return { error: 'chaque run exige key et status ∈ ok|fail|stale ; last_run, si fourni, doit être une date ISO — fautif : ' + JSON.stringify(bad).slice(0, 120) };
       const d = loadData('runs_summary.json') || { _doc: "Dernier passage connu par automatisation (clé = bout unique du nom, convention automation_plain). Alimenté par karto_ingest source=runs / runs-collect (phase 2). Mergé au build en attrs.lastRun.", runs: [] };
       const r = mergeBy(d.runs, p.runs, x => x.key);
       d.runs = r.arr; d.generated = new Date().toISOString();
@@ -183,12 +186,41 @@ export const INGEST = {
 
   'source-status': {
     source: null,
-    mold: "{ id: id de data/sources.json, status?: 'ok'|'manual'|'snapshot'|'planned'|'probe'|'absent', note? } — résultat d'une sonde (ex. Railway : compte inexistant → status:'absent').",
+    mold: "{ id: id de data/sources.json, status?: 'ok'|'manual'|'snapshot'|'planned'|'probe'|'absent', note? } — résultat d'une sonde d'existence (compte introuvable → status:'absent'). La source doit EXISTER dans data/sources.json : ce handler ne la crée pas.",
     run(p = {}) {
       if (noSecret(p)) return SECRET_ERR;
       if (!p.id) return { error: 'champ requis : id' };
       const ok = touchSource(__dir, p.id, { ...(p.status ? { status: p.status } : {}), ...(p.note ? { note: p.note } : {}) });
       return ok ? { ok: true, file: 'sources.json', id: p.id } : { error: 'source inconnue : ' + p.id };
+    }
+  },
+
+  // Pendant de `mcp-tools` pour les BASES : certains bridges ne sont atteignables que depuis
+  // une session (MCP Drive, IndexedDB d'un navigateur) ou depuis une autre machine (clé de
+  // service account, .env qui vit sur le VPS). `karto-bridge.mjs probe` ne peut pas les
+  // sonder ; la session qui les a atteints déclare le schéma ici. `provenance` est OBLIGATOIRE :
+  // un schéma lu par MCP, extrait du code source ou relevé sur le VPS ne se vaut pas, et un
+  // schéma sans provenance est indiscernable d'une supposition.
+  'bridge-schema': {
+    source: 'bridges',
+    mold: "{ id: id d'un bridge de data/bridges.json, provenance: comment le schéma a été obtenu (ex. 'MCP Drive', 'déclaration du code source', 'VPS via clé SA'), schema: {…} forme libre (tables/columns, stores, folders…), status?, note? } — la session déclare le schéma d'un bridge qu'elle a atteint et que `probe` ne peut pas atteindre. JAMAIS de valeur de secret ni de ligne de données : structure seulement.",
+    run(p = {}) {
+      if (noSecret(p)) return SECRET_ERR;
+      if (!p.id) return { error: 'champ requis : id' };
+      if (!p.provenance) return { error: 'champ requis : provenance (un schéma sans provenance est indiscernable d\'une supposition)' };
+      if (!p.schema || typeof p.schema !== 'object' || !Object.keys(p.schema).length) return { error: 'champ requis : schema (objet non vide)' };
+      const reg = loadData('bridges.json');
+      if (!reg) return { error: 'data/bridges.json absent — lance node karto-bridge.mjs gen' };
+      const b = (reg.bridges || []).find(x => x.id === p.id);
+      if (!b) return { error: 'bridge inconnu : ' + p.id + ' (ce handler ne le crée pas)' };
+      b.schema = p.schema;
+      b.schemaProvenance = p.provenance;
+      b.lastIndexed = new Date().toISOString();
+      b.status = p.status || 'indexed';
+      if (p.note) b.probeNote = p.note;
+      saveData('bridges.json', reg);
+      const n = Array.isArray(p.schema.tables) ? p.schema.tables.length : Object.keys(p.schema).length;
+      return { ok: true, file: 'bridges.json', id: p.id, entrees: n, provenance: p.provenance };
     }
   },
 };

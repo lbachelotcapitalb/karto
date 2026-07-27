@@ -14,8 +14,10 @@ import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { openDb } from './karto-sqlite.mjs';
-
-const AUTO_KINDS = new Set(['automation', 'launchagent', 'scenario', 'webhook']);
+// D1 — la liste des kinds « qui s'exécutent » était recopiée ici. Elle ne contenait pas
+// `vps_cron` : les 41 crons du VPS n'ont jamais compté dans « N automatisation(s) cassée(s) »
+// d'un scénario d'impact. Une liste recopiée diverge ; une liste importée, non.
+import { EXECUTABLE_KINDS as AUTO_KINDS } from './karto-vocab.mjs';
 
 function makeResolver(db) {
   return token => {

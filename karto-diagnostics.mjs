@@ -17,6 +17,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { openDb } from './karto-sqlite.mjs';
+import { isExecutable } from './karto-vocab.mjs';
 
 /* ---------- fonction PURE : entrées = tableaux simples, sortie = scorecard ---------- */
 export function computeDiagnostics(inp = {}) {
@@ -54,17 +55,26 @@ export function computeDiagnostics(inp = {}) {
   }
 
   // 2. SECRETS — rangement tracé ? store renseigné (bw/here/none-assumé) vs inconnu (null).
+  //    ⚠️ « tracé » ≠ « bien rangé » : la note dit donc AUSSI combien de secrets n'ont aucun
+  //    rangement au coffre (store='none' = en clair dans un fichier). Sans ça, la dimension
+  //    affichait 100/100 pendant que des clés vivaient en clair — le même signal rassurant
+  //    que celui corrigé sur les orphelins (B3) et la veille par liste blanche (B5).
   {
     const total = secretRefs.length || 1;
     const tracked = secretRefs.filter(s => s.store != null && String(s.store).trim() !== '').length;
     const untracked = secretRefs.length - tracked;
+    const inClear = secretRefs.filter(s => String(s.store || '').toLowerCase() === 'none').length;
     const score = Math.round(tracked / total * 100);
+    const items = [];
+    if (untracked) items.push({ severity: 'medium', label: `${untracked} secret(s) référencé(s) sans rangement connu (ni Bitwarden ni coffre)`, fix: 'Lancer node bw-to-karto.mjs (apparie le coffre) puis renseigner store (bw/here/none).' });
+    if (inClear) items.push({ severity: 'medium', label: `${inClear} secret(s) sans rangement au coffre — en clair dans un fichier (store='none')`, fix: 'Déposer au coffre (node vault-add.mjs) puis purger la valeur du fichier.' });
     dims.push({
       key: 'secrets', label: 'Rangement des secrets', weight: 2, score, status: statusOf(score),
-      count: untracked,
-      note: `${tracked}/${secretRefs.length} secret(s) au rangement tracé`,
-      items: untracked ? [{ severity: 'medium', label: `${untracked} secret(s) référencé(s) sans rangement connu (ni Bitwarden ni coffre)`, fix: 'Importer dans Bitwarden et renseigner store (bw/here/none).' }] : [],
-      recommendation: untracked ? 'Migrer les secrets non tracés vers Bitwarden, puis purger les .env.' : null
+      count: untracked + inClear,
+      note: `${tracked}/${secretRefs.length} secret(s) au rangement tracé` + (inClear ? ` · dont ${inClear} en clair, hors coffre` : ''),
+      items,
+      recommendation: untracked ? 'Migrer les secrets non tracés vers Bitwarden, puis purger les .env.'
+        : inClear ? `Rangement connu à 100 %, mais ${inClear} secret(s) restent en clair : les déposer au coffre est le geste suivant (session « rotation des secrets »).` : null
     });
   }
 
@@ -105,9 +115,10 @@ export function computeDiagnostics(inp = {}) {
       ['gate', 'gate de sortie (qualité + anti-injection) avant action externe'],
       ['cout', 'suivi ou plafond de coût (tokens / abonnement / budget)'],
     ];
-    const KINDS = new Set(['automation', 'agent', 'scenario', 'workload']);
+    // D1 — quatrième copie de la liste des kinds exécutables, et la seule à oublier
+    // `launchagent` en plus de `vps_cron`. Elle vient désormais de karto-vocab.
     const ai = entities.filter(e => {
-      if (!KINDS.has(e.kind)) return false;
+      if (!isExecutable(e.kind)) return false;
       const a = attrsOf(e);
       return a.llm === true || a.ia === true || (a.claudeTier != null && String(a.claudeTier) !== '');
     });
@@ -137,7 +148,7 @@ export function computeDiagnostics(inp = {}) {
 
   // 4. CYCLE DE VIE — actif marqué « Éliminer » mais encore en service.
   {
-    const bad = entities.filter(e => /[ée]limin/i.test(e.cycle || '') && /(ctif|servic)/i.test(e.statut || e.status || ''));
+    const bad = entities.filter(e => /[ée]limin/i.test(e.cycle || '') && /(ctif|servic)/i.test(e.statut || ''));
     const score = bad.length ? clamp(100 - bad.length * 20) : 100;
     dims.push({
       key: 'cycle', label: 'Cycle de vie', weight: 1, score, status: bad.length ? 'orange' : 'green',
@@ -148,22 +159,57 @@ export function computeDiagnostics(inp = {}) {
     });
   }
 
-  // 5. COUVERTURE — projet/base sans aucune connexion = trou de modélisation.
-  // (Les comptes secondaires non reliés sont NORMAUX → exclus pour éviter le bruit.)
+  // 5. COUVERTURE — une entité SANS AUCUNE ARÊTE n'est pas cartographiée : elle est
+  // seulement stockée. On sait qu'elle existe, on ignore à quoi elle se rattache.
+  //
+  // Avant le 25/07/2026 cette dimension ne regardait que les projets et les bases, « pour
+  // éviter le bruit » : elle annonçait 4 nœuds isolés là où la base en comptait 125 sur 383,
+  // et affichait un rassurant 85/100 sur un graphe déconnecté au tiers. Restreindre le
+  // périmètre de mesure ne réduit pas le problème, ça réduit ce qu'on en voit — et un
+  // diagnostic qui rassure à tort est pire que pas de diagnostic. On compte donc TOUT.
+  //
+  // L'agrégat est par `kind` et non par entité : 125 lignes noieraient le panneau, et le
+  // vrai signal n'est pas « quelle entité est isolée » mais « quel collecteur ne produit
+  // AUCUNE arête » — un kind orphelin à 100 % désigne son collecteur du doigt (cf. D4).
   {
-    const MEAN = new Set(['project', 'database']);
-    const linked = new Set();
-    for (const e of edges) { linked.add(e.src); linked.add(e.dst); }
-    const mean = entities.filter(e => MEAN.has(e.kind));
-    const orphans = mean.filter(e => !linked.has(e.id));
-    const total = mean.length || 1;
-    const score = Math.round((mean.length - orphans.length) / total * 100);
+    const out = new Set(), inn = new Set();
+    for (const e of edges) { out.add(e.src); inn.add(e.dst); }
+    const isolated = entities.filter(e => !out.has(e.id) && !inn.has(e.id));
+    // Indicateur SECONDAIRE, non noté : une entité qui n'est que citée (aucune arête
+    // sortante) est rattachée au graphe mais ne dit rien de ce dont elle dépend.
+    const noOut = entities.filter(e => !out.has(e.id));
+    const total = entities.length || 1;
+    const score = Math.round((total - isolated.length) / total * 100);
+
+    const byKind = new Map();
+    for (const e of isolated) {
+      const k = byKind.get(e.kind) || { n: 0, names: [] };
+      k.n++; if (k.names.length < 4) k.names.push(e.name);
+      byKind.set(e.kind, k);
+    }
+    const totalOf = k => entities.filter(e => e.kind === k).length;
+    const items = [...byKind.entries()]
+      .sort((a, b) => b[1].n - a[1].n)
+      .map(([kind, k]) => {
+        const tot = totalOf(kind);
+        const whole = k.n === tot;   // kind entièrement déconnecté = son collecteur est muet
+        return {
+          severity: whole ? 'medium' : 'low',
+          label: `${kind} — ${k.n}/${tot} entité(s) sans aucune arête` + (whole ? ' (le kind ENTIER est déconnecté)' : ''),
+          where: k.names.join(', ') + (k.n > k.names.length ? `, …(+${k.n - k.names.length})` : ''),
+          fix: whole
+            ? `Le collecteur qui produit les ${kind} ne crée aucune arête — c'est la cause racine, pas ${k.n} oublis isolés.`
+            : 'Rattacher au projet/host/compte concerné (arête manquante).'
+        };
+      });
     dims.push({
       key: 'couverture', label: 'Couverture du modèle', weight: 1, score, status: statusOf(score),
-      count: orphans.length,
-      note: `${orphans.length} nœud(s) important(s) isolé(s) (projet/base sans lien)`,
-      items: orphans.map(e => ({ severity: 'low', label: `${e.name} (${e.kind}) — relié à rien`, fix: 'Rattacher au projet/host/compte concerné (arête manquante).' })),
-      recommendation: orphans.length ? 'Relier les nœuds isolés (souvent une intégration ou un host manquant).' : null
+      count: isolated.length,
+      note: `${isolated.length}/${total} entité(s) sans aucune arête · ${noOut.length} sans arête sortante (indicateur secondaire, non noté)`,
+      items,
+      recommendation: isolated.length
+        ? 'Faire produire des arêtes aux collecteurs muets avant de relier à la main (un kind orphelin à 100 % = un collecteur, pas des oublis).'
+        : null
     });
   }
 
@@ -233,7 +279,7 @@ export function runDiagnostics(dir) {
   const srcReg = readJson('sources.json', {});
   return computeDiagnostics({
     sources: srcReg.sources || [],
-    entities: q('SELECT id,kind,name,criticite,cycle,statut,status,attrs FROM entity'),
+    entities: q('SELECT id,kind,name,criticite,cycle,statut,attrs FROM entity'),
     edges: q('SELECT src,dst FROM edge'),
     secretRefs: q('SELECT name,store,category FROM secret_ref'),
     bridges: q('SELECT name,last_indexed FROM bridge'),

@@ -29,8 +29,29 @@ const MIME = {
   '.webp': 'image/webp', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.map': 'application/json',
 };
 
+// ── MISE À JOUR : POST /update lance karto-update.mjs (patch/minor = re-wrap du coffre,
+// données préservées ; major = refusé, migration à part). Bindé 127.0.0.1 comme tout le
+// serveur → invisible du réseau. Un seul update à la fois (verrou en mémoire). C'est le
+// point d'application du bouton « Mettre à jour » du bandeau in-app.
+let _updating = false;
+function runUpdate(res) {
+  if (_updating) { res.writeHead(409, { 'Content-Type': 'application/json' }).end(JSON.stringify({ ok: false, error: 'mise à jour déjà en cours' })); return; }
+  _updating = true;
+  let sout = '';
+  const child = spawn(process.execPath, [join(DIR, 'karto-update.mjs')], { cwd: DIR });
+  child.stdout.on('data', d => { sout += d; });
+  child.stderr.on('data', () => {});   // logs update sur stderr : ignorés côté HTTP
+  child.on('error', e => { _updating = false; res.writeHead(500, { 'Content-Type': 'application/json' }).end(JSON.stringify({ ok: false, error: String(e.message || e) })); });
+  child.on('close', () => {
+    _updating = false;
+    let payload; try { payload = JSON.parse(sout.trim().split('\n').pop() || '{}'); } catch { payload = { ok: false, error: 'sortie de karto-update illisible' }; }
+    res.writeHead(payload.ok ? 200 : 500, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }).end(JSON.stringify(payload));
+  });
+}
+
 const server = createServer(async (req, res) => {
   try {
+    if (req.method === 'POST' && (req.url || '').split('?')[0] === '/update') { runUpdate(res); return; }
     let rel = decodeURIComponent((req.url || '/').split('?')[0]);
     if (rel === '/' || rel === '') rel = '/index.html';
     // anti-traversée : on résout DANS le dossier et on vérifie qu'on n'en sort pas

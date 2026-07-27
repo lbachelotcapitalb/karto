@@ -41,6 +41,10 @@ const ownerSet = !!(cfg.owner && cfg.owner.name);   // owner configuré → on r
 const gh = cfg.github || {};
 const GH_ID = 'acc:' + (gh.accountId || 'gh-perso');       // cf. karto-db.mjs : ids softcodés
 const ALT_GH_ID = 'acc:' + (gh.altAccountId || 'gh-alt');
+// Version karto (semver) — SOURCE DE VÉRITÉ version.json. Stampée dans le build (marqueur
+// __VERSION__ de template.html, résolu dans `core` → survit au self-rewrite navigateur) ET
+// posée dans model.meta. Fallback '0.0.0' si absent : jamais bloquant pour un build.
+const KARTO_VERSION = (() => { try { return JSON.parse(readFileSync(join(__dir, 'version.json'), 'utf8')).version || '0.0.0'; } catch { return '0.0.0'; } })();
 
 /* ---------- ouverture & collaboration (data/collaboration.json) ---------- */
 // Enrichit projets et repos avec l'openness (open-collab/open-source) + collaborateurs.
@@ -210,7 +214,7 @@ for (const co of ((cloud.connectors && cloud.connectors.list) || [])) {
 
 /* ---------- modèle final ---------- */
 const model = {
-  meta: { owner: disk._meta.owner, generated: disk._meta.generated, policy: disk._meta.policy, builtAt: new Date().toISOString() },
+  meta: { owner: disk._meta.owner, generated: disk._meta.generated, policy: disk._meta.policy, builtAt: new Date().toISOString(), version: KARTO_VERSION, updates: (cfg.updates || null) },
   kpis: {
     projects: disk.projects.length, accounts: cloud.accounts.length,
     databases: cloud.supabase.projects.length + (cloud.supabase.offAccount || []).length,
@@ -250,8 +254,11 @@ for (const r of (runsSum.runs || [])) {
   const keys = [String(r.key).toLowerCase()];
   const stripped = keys[0].replace(/^(gha|make|launchd|cron)\s+/, '');
   if (stripped !== keys[0]) keys.push(stripped);
-  const a = automations.find(x => { const n = x.name.toLowerCase(); return keys.some(k => n.includes(k)); });
-  if (a) a.lastRun = { at: r.last_run, status: r.status, duration_s: r.duration_s, note: r.note, source: r.source };
+  // TOUTES les automatisations qui portent la clé, pas seulement la première : un même agent
+  // launchd est souvent listé deux fois (label technique + nom métier). N'en marquer qu'une
+  // laissait la jumelle affichée « actif » en vert alors que l'agent est en panne.
+  for (const a of automations.filter(x => { const n = x.name.toLowerCase(); return keys.some(k => n.includes(k)); }))
+    a.lastRun = { at: r.last_run || null, status: r.status, duration_s: r.duration_s, note: r.note, source: r.source, log: r.log };
 }
 // gouvernance agentique : palier/risque par automatisation (badge) + matrice paliers×risques (onglet Agents)
 let gouvernance = null;
@@ -526,7 +533,7 @@ if (PLAIN) {
 // core = template avec le mode résolu, mais marqueurs __PAYLOAD__ / __SELF__ intacts.
 // On encode core en base64 (selfB64) pour que la page puisse se ré-écrire elle-même
 // (saisie de clés -> re-chiffrement -> téléchargement d'un index.html neuf), sans serveur.
-const core = tpl.replace(/__MODE__/g, mode);
+const core = tpl.replace(/__MODE__/g, mode).replace(/__VERSION__/g, KARTO_VERSION);
 const selfB64 = Buffer.from(core, 'utf8').toString('base64');
 // Neutralise toute séquence </script dans le payload (ex. HTML de cartographie d'app embarqué) :
 // `<\/script` reste du JSON valide (\/ → /) mais n'interrompt pas le <script id="payload"> hôte.

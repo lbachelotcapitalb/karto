@@ -84,7 +84,11 @@ const watch = new Map();
 for (const a of catalog) if (a.domain) watch.set(a.domain.toLowerCase(), { name: a.name, category: a.category || null });
 for (const [n, d] of Object.entries(cloud.vendorDomains || {})) if (n !== '_doc' && d && !watch.has(d.toLowerCase())) watch.set(d.toLowerCase(), { name: n, category: null });
 // sondes d'existence (répond aux status:probe de data/sources.json)
-const PROBES = { 'railway.app': 'railway', 'railway.com': 'railway', 'vercel.com': 'vercel', 'netlify.com': 'netlify', 'app.netlify.com': 'netlify' };
+// Railway/Vercel retirés le 25/07/2026 avec leurs sources (décision de Owner). vercel.com et
+// railway.app restent dans data/app_catalog.json : une visite future sera donc toujours
+// remontée comme CANDIDAT navigateur (fichier local) — ce qui est le bon niveau. Un candidat
+// n'est pas une source, et ne rentre dans la carte que validé.
+const PROBES = { 'netlify.com': 'netlify', 'app.netlify.com': 'netlify' };
 for (const d of Object.keys(PROBES)) if (!watch.has(d)) watch.set(d, { name: PROBES[d], category: 'probe' });
 
 // comptes/services déjà recensés (pour marquer nouveau vs recensé)
@@ -123,13 +127,16 @@ const candidates = [...byApp.values()]
   }))
   .sort((a, b) => (a.status === b.status ? b.visits - a.visits : a.status === 'nouveau' ? -1 : 1));
 
-/* ---------- verdicts de sonde (Railway & co) → data/sources.json ---------- */
+/* ---------- verdicts de sonde d'existence → data/sources.json ----------
+ * Générique : toute source en status:'probe' ou 'absent' est réévaluée d'après
+ * l'historique. Bornait auparavant en dur ['railway','vercel'] — les deux ont été
+ * retirés le 25/07/2026, et une liste codée en dur aurait laissé la prochaine sonde
+ * silencieusement hors périmètre (le motif corrigé en B5). */
 const probeSeen = id => candidates.find(c => canon(c.app) === id);
-for (const id of ['railway', 'vercel']) {
-  const hit = probeSeen(id);
-  const src = (load('sources.json') || { sources: [] }).sources.find(s => s.id === id);
-  if (!src || src.status === 'ok' || src.status === 'manual') continue;   // déjà tranché par clouds-probe
-  touchSource(__dir, id, hit
+for (const src of ((load('sources.json') || { sources: [] }).sources || [])) {
+  if (src.status !== 'probe' && src.status !== 'absent') continue;   // 'ok'/'manual' = déjà tranché par clouds-probe
+  const hit = probeSeen(src.id);
+  touchSource(__dir, src.id, hit
     ? { note: `Historique navigateur : ${hit.visits} visite(s) de ${hit.domain} (dernière ${hit.last}) — compte probable, à confirmer.` }
     : { status: 'absent', note: `Historique navigateur : zéro visite en ${WINDOW_DAYS} j — très probablement pas de compte.` });
 }

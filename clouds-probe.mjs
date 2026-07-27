@@ -13,10 +13,11 @@ import { ingest } from './karto-ingest.mjs';
 const __dir = dirname(fileURLToPath(import.meta.url));
 const sh = (bin, args) => { try { return { out: execFileSync(bin, args, { encoding: 'utf8', timeout: 20000, stdio: ['ignore', 'pipe', 'pipe'] }).trim() }; } catch (e) { return { err: (e.code === 'ENOENT') ? 'CLI absent' : String(e.stderr || e.message || '').trim().slice(0, 120) }; } };
 
+// Vercel et Railway retirés le 25/07/2026 (décision de Owner : « je n'ai besoin ni de vercel
+// ni de railway »). Leurs sources n'existent plus dans data/sources.json → les sonder
+// n'aurait produit qu'un « ✗ source inconnue » à chaque passage.
 const PROBES = [
-  { id: 'vercel', bin: 'vercel', args: ['whoami'] },
   { id: 'netlify', bin: 'netlify', args: ['api', 'getCurrentUser'], pick: out => { try { return 'login ' + (JSON.parse(out).email || '?'); } catch { return out.split('\n')[0]; } } },
-  { id: 'railway', bin: 'railway', args: ['whoami'] },
 ];
 
 for (const p of PROBES) {

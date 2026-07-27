@@ -14,6 +14,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openDb } from './karto-sqlite.mjs';
+import { EXECUTABLE_KINDS } from './karto-vocab.mjs';
 
 export function computeGouvernance(dir) {
   const overlay = JSON.parse(readFileSync(join(dir, 'data', 'gouvernance_agentique.json'), 'utf8'));
@@ -21,9 +22,14 @@ export function computeGouvernance(dir) {
   const PALIER_ORDER = overlay._meta.enums.palier;
 
   const db = openDb(join(dir, 'karto.db'), { readOnly: true });
+  // D1 — même définition que partout ailleurs (karto-vocab.EXECUTABLE_KINDS). L'ancienne liste
+  // en dur ignorait les 41 crons du VPS, les 8 agents et les 34 workloads : la gouvernance
+  // annonçait donc une couverture calculée sur un périmètre qu'elle avait choisi elle-même.
+  // La liste `uncovered` grossit d'autant — c'est le but, comme les orphelins 4 → 125 de B3.
+  const ph = [...EXECUTABLE_KINDS].map(() => '?').join(',');
   const rows = db.prepare(
-    "SELECT kind, name FROM entity WHERE kind IN ('automation','launchagent','scenario') ORDER BY kind, name"
-  ).all();
+    `SELECT kind, name FROM entity WHERE kind IN (${ph}) ORDER BY kind, name`
+  ).all(...EXECUTABLE_KINDS);
   db.close();
 
   const classify = name => {

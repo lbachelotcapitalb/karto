@@ -12,7 +12,7 @@
 // Enregistrement (config Claude) : commande = node, args = [chemin de ce fichier].
 // stdout est RÉSERVÉ au protocole ; tout log va sur stderr.
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { openDb, engineName, checkReadOnlySql } from './karto-sqlite.mjs';
@@ -31,8 +31,35 @@ const __dir = dirname(fileURLToPath(import.meta.url));
 const DB = join(__dir, 'karto.db');
 if (!existsSync(DB)) { process.stderr.write('✗ karto.db absent — lance d’abord `node karto-db.mjs build` (ou `node karto-index.mjs`).\n'); process.exit(1); }
 if (engineName() === 'none') { process.stderr.write('✗ Aucun moteur SQLite — installe Node ≥ 22 (recommandé) OU le binaire `sqlite3` (macOS l’a ; sinon brew/apt install sqlite3).\n'); process.exit(1); }
-let db;
-try { db = openDb(DB, { readOnly: true }); }
+// La connexion est rouverte dès que le FICHIER change d'identité (inode), pas seulement
+// quand le rebuild passe par karto_rebuild.
+//
+// Pourquoi : `karto-db.mjs build` SUPPRIME karto.db (et ses -wal/-shm) avant de la
+// recréer. Un serveur MCP déjà lancé garde alors son descripteur ouvert sur l'inode
+// supprimé et continue de répondre — sans erreur, sans avertissement — depuis la base
+// d'AVANT. Constaté le 25/07/2026 : après un rebuild, `karto_sql` renvoyait 0 entité
+// portant un `lastStatus` là où la base sur disque en portait 48 ; `lsof` montrait trois
+// process node accrochés à des inodes supprimés.
+//
+// C'est plus grave qu'un désagrément : `karto_sql` sert à VÉRIFIER le travail. Un outil
+// qui répond faux en silence invalide la vérification elle-même — on croit mesurer le
+// système, on mesure un souvenir. D'où un contrôle avant chaque appel plutôt qu'une
+// confiance dans la discipline de l'appelant.
+let db, dbIno = 0;
+function openFresh() {
+  db = openDb(DB, { readOnly: true });
+  try { dbIno = statSync(DB).ino; } catch { dbIno = 0; }
+}
+function ensureFresh() {
+  let ino;
+  // Fichier momentanément absent (on est PENDANT un rebuild) : on garde la connexion
+  // courante plutôt que de planter. Le prochain appel verra le nouvel inode.
+  try { ino = statSync(DB).ino; } catch { return; }
+  if (!ino || ino === dbIno) return;
+  try { openFresh(); process.stderr.write('↻ karto.db reconstruite ailleurs — connexion rouverte\n'); }
+  catch (e) { process.stderr.write('⚠ réouverture de karto.db impossible : ' + (e.message || e) + '\n'); }
+}
+try { openFresh(); }
 catch (e) { process.stderr.write('✗ ' + (e.message || e) + '\n'); process.exit(1); }
 
 // ---------- helpers (repris de karto-query) ----------
@@ -94,7 +121,8 @@ const TOOLS = {
       const terms = String(query || '').trim().split(/\s+/).filter(Boolean);
       if (!terms.length) return [];
       const where = terms.map(() => 'doc LIKE ?').join(' AND ');
-      return db.prepare(`SELECT id, kind, name, vendor, criticite, status, statut FROM entity WHERE ${where} ORDER BY kind, name LIMIT 60`).all(...terms.map(t => '%' + t.toLowerCase() + '%'));
+      // D1 — `status` supprimée : `statut` est la seule colonne de cycle de vie.
+      return db.prepare(`SELECT id, kind, name, vendor, criticite, statut FROM entity WHERE ${where} ORDER BY kind, name LIMIT 60`).all(...terms.map(t => '%' + t.toLowerCase() + '%'));
     }
   },
   karto_entity: {
@@ -225,8 +253,46 @@ const PROMPTS = {
   'ou-vit-secret': { description: "Localiser un secret.", arguments: [{ name: 'secret', description: 'Nom/service du secret', required: true }], build: a => `Trouve où vit le secret "${a.secret || ''}" : karto_search puis karto_entity. Donne l'emplacement (store/path), le service, et s'il est tracé dans Bitwarden ou en clair.` }
 };
 
+// ---------- Version + notification de mise à jour ----------
+// La version vient de version.json (source de vérité unique, aussi stampée dans le build
+// et publiée sur le VPS). serverInfo.version la reflète. En plus, on ACCROCHE un avis
+// « nouvelle version dispo » à la 1re réponse d'outil de la session : beaucoup d'utilisateurs
+// passent par le MCP, la notif les atteint là. Le check est un simple GET du manifeste
+// upstream (aucune donnée ne sort), MIS EN CACHE (intervalHours) et GATÉ par la même
+// config `updates.check` que l'in-app — check:false le coupe partout. Échec = silence.
+const CFG = (() => { try { return JSON.parse(readFileSync(join(__dir, 'karto.config.json'), 'utf8')); } catch { return {}; } })();
+const VERSION = (() => { try { return JSON.parse(readFileSync(join(__dir, 'version.json'), 'utf8')).version || '0.0.0'; } catch { return '0.0.0'; } })();
+const UPD = CFG.updates || {};
+const UPD_CACHE = join(__dir, '.karto-update-cache.json');
+const cmpSemver = (a, b) => { const pa = String(a).split('.').map(n => parseInt(n, 10) || 0), pb = String(b).split('.').map(n => parseInt(n, 10) || 0); for (let i = 0; i < 3; i++) { if ((pa[i] || 0) > (pb[i] || 0)) return 1; if ((pa[i] || 0) < (pb[i] || 0)) return -1; } return 0; };
+let UPDATE_NOTICE = null, noticeShown = false;
+function noticeFrom(m) {
+  if (!m || !m.version || cmpSemver(m.version, VERSION) <= 0) return null;
+  const major = m.type === 'major';
+  return `ℹ️ Mise à jour karto disponible : ${m.version} (installée : ${VERSION}).`
+    + (major ? ' Majeure — migration requise, sauvegarde le coffre d’abord.' : '')
+    + (m.notes ? ' ' + String(m.notes).slice(0, 140) : '')
+    + ' → ouvre l’app karto et clique « Mettre à jour », ou lance `node karto-update.mjs`.';
+}
+// Synchrone : notice immédiate depuis le cache (aucun réseau) → surfacée dès le 1er appel.
+try { const c = JSON.parse(readFileSync(UPD_CACHE, 'utf8')); if (c && c.manifest) UPDATE_NOTICE = noticeFrom(c.manifest); } catch {}
+// Async, non-bloquant : rafraîchit le cache si périmé. Jamais d'exception propagée.
+(async function refreshUpdateNotice() {
+  try {
+    if (UPD.check === false || !UPD.manifestUrl || typeof fetch !== 'function') return;
+    let at = 0; try { at = (JSON.parse(readFileSync(UPD_CACHE, 'utf8')) || {}).at || 0; } catch {}
+    if (Date.now() - at < (UPD.intervalHours || 24) * 3600000) return;   // cache encore frais
+    const opts = AbortSignal.timeout ? { signal: AbortSignal.timeout(4000) } : {};
+    const r = await fetch(UPD.manifestUrl, opts);
+    if (!r.ok) return;
+    const manifest = await r.json();
+    try { writeFileSync(UPD_CACHE, JSON.stringify({ at: Date.now(), manifest })); } catch {}
+    UPDATE_NOTICE = noticeFrom(manifest);
+  } catch { /* hors-ligne / CORS / JSON invalide : silence, l'in-app notifie aussi */ }
+})();
+
 // ---------- transport MCP (stdio, JSON-RPC 2.0 délimité par lignes) ----------
-const SERVER = { name: 'karto', version: '1.1.0' };
+const SERVER = { name: 'karto', version: VERSION };
 function send(msg) { process.stdout.write(JSON.stringify(msg) + '\n'); }
 function reply(id, result) { send({ jsonrpc: '2.0', id, result }); }
 function fail(id, code, message) { send({ jsonrpc: '2.0', id, error: { code, message } }); }
@@ -249,9 +315,13 @@ function handle(msg) {
     const name = params && params.name; const args = (params && params.arguments) || {};
     const tool = TOOLS[name];
     if (!tool) return fail(id, -32602, 'outil inconnu : ' + name);
+    ensureFresh();          // la base a-t-elle été reconstruite sous nos pieds ?
     try {
       const res = tool.run(args);
-      return reply(id, { content: [{ type: 'text', text: JSON.stringify(res, null, 2) }] });
+      const content = [{ type: 'text', text: JSON.stringify(res, null, 2) }];
+      // Avis de MAJ accroché UNE fois par session (2e bloc texte, le résultat reste intact).
+      if (UPDATE_NOTICE && !noticeShown) { noticeShown = true; content.push({ type: 'text', text: UPDATE_NOTICE }); }
+      return reply(id, { content });
     } catch (e) {
       return reply(id, { content: [{ type: 'text', text: 'Erreur : ' + String(e.message || e) }], isError: true });
     }

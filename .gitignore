@@ -3,6 +3,8 @@
 karto.db
 karto.db-wal
 karto.db-shm
+.karto-update-cache.json
+.karto-key.json
 .env
 .env.*
 *.env
