@@ -12,6 +12,10 @@ Règle de bump (liée au **risque pour le coffre de l'utilisateur**, pas à la t
 
 ---
 
+## 1.3.0 — 2026-07-28 (minor)
+
+- Front softcode (lot G) : manifeste de payload + descripteur de vues, 4 primitives de rendu, detail des constats de sante, declare vs mesure sur les contrats MCP, couche d'execution reelle, fiches fournisseur generiques, garde front-audit
+
 ## 1.2.0 — 2026-07-26 (minor)
 
 - Refonte UI v2 : coquille flottante (barre, rail, volet, panneau en verre gris), tableau de bord fusionné avec la cartographie, palette tenue gris + or, vue Santé du système, responsive et curseur anneau. Aucun changement de format du coffre.

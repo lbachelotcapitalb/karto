@@ -1,0 +1,20 @@
+{
+ "_meta": {
+  "doc": "",
+  "applique_par": "",
+  "principe": "",
+  "fail_open": "",
+  "champs": {
+   "kind": "",
+   "action": "",
+   "outils": "",
+   "preconditions": "",
+   "effet": "",
+   "agents_autorises": ""
+  },
+  "version": "",
+  "updated": ""
+ },
+ "agents": [],
+ "actions": []
+}

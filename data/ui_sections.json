@@ -1,0 +1,146 @@
+{
+  "_doc": "DESCRIPTEUR DE VUES (lot G2, 28/07/2026) — le rail, les sous-onglets et les vues GÉNÉRIQUES sont de la donnée, plus du code. `groups` décrit la navigation (id du groupe = clé d'icône dans template.html). Une vue est soit `bespoke` (fonction dédiée déjà écrite : overview, comptes, sécurité…), soit décrite ici par des `blocks` rendus par les primitives : `table` (lignes + colonnes déclarées), `kv` (un objet → clé/valeur, forme déduite), `findings` (severity/label/where/fix), `compare` (déclaré ↔ mesuré). AJOUTER UNE VUE = ajouter une entrée `views` + un enfant dans `groups`. Aucun JS. Une vue dont la source est vide/absente disparaît du rail (dégradation propre) : c'est ce qui rend le fichier réutilisable par un tiers qui n'a pas les mêmes sources. Fichier générique : livré tel quel dans le paquet public. Formats de colonne (`fmt`) : text · mono · num · ago · date · badge · pill · list · url · bool.",
+  "groups": [
+    { "id": "overview", "label": "Tableau de bord", "children": [{ "id": "overview", "label": "Tableau de bord" }] },
+    { "id": "bu", "label": "Business Units", "children": [{ "id": "bu", "label": "Business Units" }] },
+    { "id": "inventory", "label": "Inventaire", "children": [{ "id": "inventory", "label": "Inventaire" }] },
+    { "id": "appareils", "label": "Appareils", "children": [{ "id": "appareils", "label": "Appareils" }] },
+    { "id": "carto", "label": "Cartographie", "children": [
+      { "id": "capabilities", "label": "Capacités" },
+      { "id": "matrix", "label": "Matrice TIME" },
+      { "id": "model", "label": "Modèle de données" }
+    ] },
+    { "id": "projects", "label": "Projets", "children": [{ "id": "projects", "label": "Projets" }] },
+    { "id": "flux", "label": "Bases & flux", "children": [
+      { "id": "cloud", "label": "Cloud & Bases" },
+      { "id": "connectors", "label": "Connecteurs" },
+      { "id": "providers", "label": "Fournisseurs" },
+      { "id": "sites", "label": "Sites" }
+    ] },
+    { "id": "autos", "label": "Automatisations", "children": [
+      { "id": "autos", "label": "Automatisations" },
+      { "id": "execution", "label": "Ce qui tourne" }
+    ] },
+    { "id": "identites", "label": "Identités", "children": [
+      { "id": "secrets", "label": "Secrets" },
+      { "id": "accounts", "label": "Comptes" },
+      { "id": "registry", "label": "Annuaire" },
+      { "id": "logins", "label": "Identifiants" }
+    ] },
+    { "id": "secdata", "label": "Sécurité & données", "children": [
+      { "id": "security", "label": "Sécurité" },
+      { "id": "data", "label": "Données" }
+    ] },
+    { "id": "systeme", "label": "Système", "children": [
+      { "id": "ops", "label": "Système" },
+      { "id": "sources", "label": "Fraîcheur des sources" },
+      { "id": "files", "label": "Fichiers" },
+      { "id": "kb", "label": "Base de connaissances" }
+    ] },
+    { "id": "ia", "label": "IA", "children": [{ "id": "ia", "label": "IA" }] },
+    { "id": "agents", "label": "Agents", "children": [
+      { "id": "agents", "label": "Agents" },
+      { "id": "actiontypes", "label": "Action Types" }
+    ] }
+  ],
+  "views": {
+    "sources": {
+      "badge": "count",
+      "intro": "D'où vient la carte, et depuis quand. Chaque collecteur estampille sa source à l'exécution (<span class=\"mono\">karto-sources.touchSource()</span>) : une source qui vieillit au-delà de sa cadence se voit ici avant d'être crue sur parole.",
+      "empty": "Aucune source déclarée. Lance un collecteur (<span class=\"mono\">node karto-index.mjs</span>) : chaque passage estampille <span class=\"mono\">data/sources.json</span>.",
+      "blocks": [
+        { "render": "table", "source": "sources", "sort": "last_synced", "order": "desc", "columns": [
+          { "key": "name", "label": "Source", "fmt": "text", "strong": true },
+          { "key": "method", "label": "Méthode", "fmt": "pill" },
+          { "key": "collector", "label": "Collecteur", "fmt": "mono" },
+          { "key": "auto", "label": "Auto", "fmt": "bool" },
+          { "key": "cadence_days", "label": "Cadence", "fmt": "num", "suffix": " j" },
+          { "key": "last_synced", "label": "Dernière synchro", "fmt": "ago", "staleFrom": "cadence_days" },
+          { "key": "status", "label": "État", "fmt": "badge" }
+        ] }
+      ]
+    },
+    "actiontypes": {
+      "badge": "count",
+      "intro": "La règle d'autorisation comme <b>donnée</b>, pas comme code recopié dans chaque serveur MCP : quelle action, sur quels outils, sous quelles préconditions, et quels agents sont autorisés. Appliquée en amont par le hook <span class=\"mono\">PreToolUse</span> ; le serveur garde la sienne (défense en profondeur).",
+      "empty": "Aucun Action Type déclaré. Source : <span class=\"mono\">data/action_types.json</span>.",
+      "blocks": [
+        { "title": "Actions", "render": "table", "source": "actionTypes.actions", "columns": [
+          { "key": "action", "label": "Action", "fmt": "text", "strong": true },
+          { "key": "kind", "label": "Nature", "fmt": "pill" },
+          { "key": "outils", "label": "Outils visés", "fmt": "list" },
+          { "key": "preconditions", "label": "Préconditions", "fmt": "list" },
+          { "key": "effet", "label": "Effet", "fmt": "text" },
+          { "key": "agents_autorises", "label": "Agents autorisés", "fmt": "list" }
+        ] },
+        { "title": "Agents déclarés", "render": "table", "source": "actionTypes.agents", "columns": [
+          { "key": "libelle", "label": "Agent", "fmt": "text", "strong": true },
+          { "key": "id", "label": "Identifiant", "fmt": "mono" },
+          { "key": "note", "label": "Note", "fmt": "text" }
+        ] }
+      ]
+    },
+    "execution": {
+      "badge": "count",
+      "intro": "Tout ce qui s'exécute, <b>mesuré</b> et non plus seulement décrit : crons, services, agents planifiés, quelle que soit la machine. « curé » = une fiche écrite à la main dans l'inventaire ; « mesuré » = ramené par un collecteur sur la machine. L'onglet <b>Automatisations</b> raconte les chaînes ; celui-ci dit ce qui tourne vraiment, et surtout <b>où les deux ne se recoupent pas</b>.",
+      "empty": "Aucun exécutable dans le graphe. Lance <span class=\"mono\">node karto-index.mjs</span> pour collecter, puis rebuild.",
+      "blocks": [
+        { "title": "Mesuré sur la machine, absent de la carte", "render": "table", "source": "execution.measuredOnly", "columns": [
+          { "key": "name", "label": "Exécutable", "fmt": "text", "strong": true },
+          { "key": "schedule", "label": "Planning", "fmt": "mono" },
+          { "key": "host", "label": "Machine", "fmt": "text" },
+          { "key": "commande", "label": "Commande", "fmt": "mono" },
+          { "key": "lastStatus", "label": "Dernier état", "fmt": "badge" }
+        ] },
+        { "title": "Curé, mais sans aucune trace d'exécution", "render": "table", "source": "execution.curatedNoRun", "columns": [
+          { "key": "name", "label": "Automatisation", "fmt": "text", "strong": true },
+          { "key": "runner", "label": "Moteur", "fmt": "pill" },
+          { "key": "schedule", "label": "Planning", "fmt": "text" },
+          { "key": "host", "label": "Machine", "fmt": "text" },
+          { "key": "statut", "label": "Statut déclaré", "fmt": "badge" }
+        ] },
+        { "title": "Tous les exécutables", "render": "table", "source": "execution.rows", "columns": [
+          { "key": "name", "label": "Exécutable", "fmt": "text", "strong": true },
+          { "key": "origine", "label": "Origine", "fmt": "badge", "colors": { "curé": "#C9A579", "mesuré": "#4ED8A0" } },
+          { "key": "kind", "label": "Type", "fmt": "pill" },
+          { "key": "runner", "label": "Moteur", "fmt": "pill" },
+          { "key": "schedule", "label": "Planning", "fmt": "mono" },
+          { "key": "host", "label": "Machine", "fmt": "text" },
+          { "key": "lastStatus", "label": "Dernier état", "fmt": "badge" },
+          { "key": "lastAt", "label": "Vu", "fmt": "ago" }
+        ] }
+      ]
+    },
+    "providers": {
+      "intro": "Une fiche par fournisseur, <b>déduite de la forme de la donnée</b> : ce que le collecteur ramène s'affiche, quelle que soit sa structure (compteur pour une liste, « non mesuré » en gris pour ce qui n'a pas été sondé). Aucun fournisseur n'est écrit dans le code — un fournisseur que la carte n'a jamais vu apparaît ici tout seul. Les bases, domaines et dépôts gardent leurs tables dédiées dans <b>Cloud &amp; Bases</b>.",
+      "empty": "Aucun fournisseur détaillé. Source : <span class=\"mono\">data/cloud_inventory.json</span>.",
+      "blocks": [
+        { "render": "kvEach", "source": "cloud", "skipKeys": ["vendorDomains", "domains", "supabase", "github", "make", "netlify", "connectors"], "max": 10 },
+        { "title": "Serveurs MCP détectés sur la machine", "render": "table", "source": "machine.mcpServers", "columns": [
+          { "key": "name", "label": "Serveur", "fmt": "text", "strong": true },
+          { "key": "transport", "label": "Transport", "fmt": "pill" },
+          { "key": "scope", "label": "Portée", "fmt": "list" },
+          { "key": "origin", "label": "Origine", "fmt": "mono" }
+        ] },
+        { "title": "Hôtes SSH connus", "render": "table", "source": "machine.sshHosts" }
+      ]
+    },
+    "sites": {
+      "badge": "count",
+      "intro": "Les propriétés web du SI — plateforme, criticité, domaines servis et ce qui les alimente.",
+      "empty": "Aucun site recensé. Source : <span class=\"mono\">data/sites.json</span>.",
+      "blocks": [
+        { "render": "table", "source": "sites", "columns": [
+          { "key": "name", "label": "Site", "fmt": "text", "strong": true },
+          { "key": "plateforme", "label": "Plateforme", "fmt": "pill" },
+          { "key": "domaines", "label": "Domaines", "fmt": "list" },
+          { "key": "statut", "label": "Statut", "fmt": "badge" },
+          { "key": "criticite", "label": "Criticité", "fmt": "badge" },
+          { "key": "owner", "label": "Porteur", "fmt": "text" },
+          { "key": "members", "label": "Alimenté par", "fmt": "list" },
+          { "key": "note", "label": "Note", "fmt": "text", "muted": true }
+        ] }
+      ]
+    }
+  }
+}

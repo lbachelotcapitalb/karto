@@ -1,8 +1,8 @@
 {
   "_doc": "SOURCE DE VÉRITÉ de la version de karto (semver X.Y.Z). Ne PAS éditer à la main : `node release.mjs patch|minor|major -m \"…\"` bump ce fichier + CHANGELOG.md. build.mjs le stampe dans index.html (const __VERSION__) ; karto-mcp.mjs le lit pour serverInfo.version ; deploy-onepager.sh le publie sur le VPS (<hosted.url>/version.json) = le manifeste que chaque instance auto-hébergée interroge pour savoir si une MAJ existe.",
-  "version": "1.2.0",
-  "date": "2026-07-26",
+  "version": "1.3.0",
+  "date": "2026-07-28",
   "type": "minor",
   "min_from": "1.0.0",
-  "notes": "Refonte UI v2 : coquille flottante (barre, rail, volet, panneau en verre gris), tableau de bord fusionné avec la cartographie, palette tenue gris + or, vue Santé du système, responsive et curseur anneau. Aucun changement de format du coffre."
+  "notes": "Front softcode (lot G) : manifeste de payload + descripteur de vues, 4 primitives de rendu, detail des constats de sante, declare vs mesure sur les contrats MCP, couche d'execution reelle, fiches fournisseur generiques, garde front-audit"
 }

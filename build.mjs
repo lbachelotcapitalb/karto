@@ -368,6 +368,41 @@ try {
       subUnits: (byBu[b.id] || []).filter(m => m.kind === 'business_unit').map(m => m.name)
     }; });
   } catch (e) { console.error('  ⚠ business units non calculées :', e.message); }
+  // G4 — COUCHE D'EXÉCUTION RÉELLE. Le front listait la couche CURÉE (58 automatisations décrites
+  // à la main) ; karto.db connaît en plus tout ce que les collecteurs mesurent sur les machines
+  // (crontab, services, timers). On expose les deux et surtout leur ÉCART, sans nommer d'hôte :
+  // la vue marche pour un poste seul comme pour N serveurs.
+  try {
+    const { EXECUTABLE_KINDS } = await import('./karto-vocab.mjs');
+    const kinds = [...EXECUTABLE_KINDS];
+    const ents = q(`SELECT id,name,kind,statut,source,attrs FROM entity WHERE kind IN (${kinds.map(k => `'${k}'`).join(',')})`);
+    const hosts = Object.fromEntries(q("SELECT x.src AS src, e.name AS host FROM edge x JOIN entity e ON e.id=x.dst WHERE x.rel='tourne-sur'").map(r => [r.src, r.host]));
+    // « curé » = décrit à la main dans un inventaire édité ; « mesuré » = ramené par un collecteur machine
+    const CURATED_SRC = new Set(['disk_inventory.json', 'cloud_inventory.json', 'agents.json', 'ea_inventory.json']);
+    const rows = ents.map(e => {
+      let a = {}; try { a = JSON.parse(e.attrs || '{}'); } catch {}
+      const lr = a.lastRun || {};
+      return {
+        name: e.name, kind: e.kind, runner: a.runner || '—', schedule: a.schedule || a.trigger || '',
+        host: hosts[e.id] || '', statut: e.statut || '', lastStatus: a.lastStatus || lr.status || '',
+        lastAt: lr.at || null, origine: CURATED_SRC.has(e.source) ? 'curé' : 'mesuré',
+        commande: a.command || a.path || '', source: e.source
+      };
+    }).sort((x, y) => (x.host || '').localeCompare(y.host || '') || x.name.localeCompare(y.name));
+    // rapprochement par NOM DE SCRIPT (la seule clé commune entre une crontab et une fiche rédigée)
+    const script = s => (String(s || '').match(/([\w.-]+\.(sh|mjs|js|py|ts))/) || [])[1] || '';
+    const curatedHay = ents.filter(e => CURATED_SRC.has(e.source)).map(e => (e.name + ' ' + (e.attrs || '')).toLowerCase()).join(' ');
+    const measuredOnly = rows.filter(r => r.origine === 'mesuré').filter(r => {
+      const s = script(r.commande) || script(r.name); if (!s) return false;
+      return !curatedHay.includes(s.replace(/\.(sh|mjs|js|py|ts)$/, '').toLowerCase());
+    });
+    const curatedNoRun = rows.filter(r => r.origine === 'curé' && !r.lastStatus);
+    model.execution = { rows, measuredOnly, curatedNoRun,
+      counts: { total: rows.length, cure: rows.filter(r => r.origine === 'curé').length,
+                mesure: rows.filter(r => r.origine === 'mesuré').length,
+                avecTrace: rows.filter(r => r.lastStatus).length } };
+    model.kpis.executables = rows.length;
+  } catch (e) { console.error('  ⚠ couche d\'exécution non calculée :', e.message); }
   kdb.close();
 } catch (e) { console.error('  ⚠ modèle de données non calculé (karto.db absent ?) :', e.message); }
 model.dataModel = dataModel;
@@ -380,6 +415,36 @@ if (accountRegistry) { model.accountRegistry = accountRegistry; model.kpis.exter
 let vaultConnection = null;
 try { vaultConnection = JSON.parse(readFileSync(join(__dir, 'data/vault_connection.json'), 'utf8')); } catch {}
 if (vaultConnection) model.vaultConnection = vaultConnection;   // coffre connecté (provider/total/byCategory) via vault-connect.mjs
+
+/* ---------- G1 : sources déclaratives (data/payload_manifest.json) ----------
+ * Une source « rendue telle quelle » n'a plus besoin de code ici : elle est déclarée dans le
+ * manifeste, chargée sous sa clé, et rendue par le descripteur de vues (data/ui_sections.json).
+ * Le manifeste est aussi le REGISTRE COMPLET : tout data/*.json non déclaré est signalé au build,
+ * pour qu'une source produite par un collecteur ne puisse plus rester invisible en silence. */
+// Descripteur de vues (rail + vues génériques). Absent → le front retombe sur son rail câblé.
+try { model.ui = JSON.parse(readFileSync(join(__dir, 'data/ui_sections.json'), 'utf8')); }
+catch (e) { model.ui = null; console.error('  ⚠ descripteur de vues non chargé (rail de repli) :', e.message); }
+let payloadManifest = { entries: [] };
+try { payloadManifest = JSON.parse(readFileSync(join(__dir, 'data/payload_manifest.json'), 'utf8')); } catch (e) { console.error('  ⚠ manifeste de payload illisible :', e.message); }
+const stripMeta = o => (o && typeof o === 'object' && !Array.isArray(o))
+  ? Object.fromEntries(Object.entries(o).filter(([k]) => !k.startsWith('_'))) : o;
+const declaredFiles = new Set();
+for (const e of (payloadManifest.entries || [])) {
+  if (e.file) declaredFiles.add(e.file);
+  if (e.mode !== 'payload' || !e.key) continue;
+  let raw = null;
+  try { raw = JSON.parse(readFileSync(join(__dir, 'data', e.file), 'utf8')); }
+  catch { console.error(`  ⚠ source déclarée absente : data/${e.file} (clé ${e.key}) — sa vue restera vide`); continue; }
+  const val = e.pick ? (raw[e.pick] ?? null) : stripMeta(raw);
+  if (val == null) { console.error(`  ⚠ data/${e.file} : racine « ${e.pick} » introuvable`); continue; }
+  model[e.key] = val;
+  if (Array.isArray(val)) model.kpis[e.key] = val.length;
+}
+try {
+  const onDisk = readdirSync(join(__dir, 'data')).filter(f => f.endsWith('.json') && !f.startsWith('.'));
+  const orphans = onDisk.filter(f => !declaredFiles.has(f) && f !== 'payload_manifest.json' && f !== 'ui_sections.json');
+  if (orphans.length) console.error(`  ⚠ ${orphans.length} source(s) hors manifeste (ni payload, ni builtin, ni out) : ${orphans.join(', ')}`);
+} catch {}
 
 /* ---------- ops : mode d'emploi opérationnel (sauvegarde / restauration / sync) ---------- */
 let lastSync = null;

@@ -24,6 +24,24 @@ passphrase). Emplacement : **`/Users/Owner/Documents/Claude/Projects/cartographi
 
 `index.html` est un **artefact rendu** depuis ces JSON. Les éditer ne suffit pas : il faut **rebuild**.
 
+## Le front est SOFTCODE — deux fichiers, pas du code (lot G, 29/07/2026)
+Constat du 28/07 : le backend avait appris à mesurer (12 dimensions de diagnostic, handshake MCP,
+crontab des machines) sans que le front n'en montre rien, parce que chaque vue était une fonction
+écrite à la main et chaque source un `readFileSync` en dur. Corrigé par deux fichiers :
+
+| Fichier | Rôle | Règle |
+|---|---|---|
+| `data/payload_manifest.json` | **registre complet** des `data/*.json` : `payload` (embarqué tel quel sous une clé) · `builtin` (transformé par build.mjs) · `out` (hors carte, avec motif) | ajouter une source générique = **une ligne**, aucun code |
+| `data/ui_sections.json` | le **rail**, les sous-onglets, et les vues génériques (`blocks` → primitives `table` · `kv` · `kvEach` · `findings`) | ajouter une vue = **une entrée**, aucun JS |
+
+Primitives dans `template.html` : `genTable` (colonnes déclarées ou union des clés), `genKv` /
+`genKvEach` (forme **déduite** : liste → compteur + chips, `"non mesuré"` en gris, objet → dépliable),
+`genFindings` (`{severity,label,where,fix}`). Une vue générique **sans donnée disparaît du rail** :
+c'est ce qui rend le descripteur réutilisable par un tiers qui n'a pas les mêmes sources.
+Garde-fou : `node front-audit.mjs` (bloquant en CI/cron). Rail câblé de repli (`GROUPS_FALLBACK`)
+si le descripteur manque. **Ne recode jamais une vue en dur** : si une donnée ne s'affiche pas,
+la réponse est une entrée de descripteur, ou une primitive de plus — jamais un `renderXxx()`.
+
 ## Vocabulaire fermé — `data/karto_vocabulary.json` (roadmap D1, 26/07/2026)
 **Source de vérité unique** des types d'entités, des relations et des valeurs contrôlées.
 Ce n'est pas de la documentation : le fichier est importé par `karto-vocab.mjs`, qui (1) normalise
@@ -190,6 +208,7 @@ ne vivent que chiffrées dans `index.html` (cf. `build.mjs --with-secrets`, lues
 - `gouvernance.mjs` — **table de gouvernance agentique** (paliers × risques) : joint karto.db avec l'overlay `data/gouvernance_agentique.json` et signale les automatisations non classées. `node gouvernance.mjs [--json]`. À rejouer/reclasser à chaque ajout d'automatisation — le **cron hebdo karto** (`karto-cron.sh`, launchd `com.karto.sync-weekly`, lundi 09:10) le contrôle automatiquement et signale les non-classées via ton canal de notif.
 - `karto-index.mjs` — pipeline complet (collect → bridges → db build).
 - `build.mjs` — fusionne data → graphe + EA → `index.html` (chiffré ou `--plain`).
+- `front-audit.mjs` — **garde d'alignement front ↔ backend** (lot G, 29/07/2026) : refuse une source hors manifeste, un chemin de vue mort, un onglet qui ne mène nulle part ; avertit sur les colonnes fantômes et les zones mortes du coffre. `node front-audit.mjs [--json]`, lecture seule. Contrôlé par le cron hebdo → ton canal de notif.
 - `rekey.mjs` / `rebuild.command` — changer la passphrase sans rien perdre.
 - `supabase-refresh.mjs` — interroge l'API Management de chaque PAT collé dans le coffre.
 - `serve.mjs` — `node serve.mjs` → http://localhost:8901 pour tester en local.

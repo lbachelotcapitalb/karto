@@ -1409,6 +1409,7 @@ function start(){
       else lb.title='Aucune session mémorisée — clique pour verrouiller';
     }catch(e){}
   }
+  ensureSections(); buildGroups(); renderGenericAll();   // G2 : vues softcode (descripteur DATA.ui)
   renderKpis(); renderTabs(); renderAlert(); renderDashboard(); renderBU(); renderInventaire(); renderCapacites(); renderMatrice(); renderModel(); renderData(); renderAgents();
   renderProjects(); renderCloud(); renderKb(); renderAutos(); renderConnectors(); renderSecrets(); renderLogins(); renderSecurity(); renderAccounts(); renderRegistry(); renderOps(); renderFiles(); renderAppareils(); apparLoad(); renderDoc(); renderIA(); renderWelcome();
   renderHealth(); renderGauge(); customCaret();
@@ -2061,7 +2062,10 @@ const ICONS={
   ia:'M12 4l1.8 4.2L18 10l-4.2 1.8L12 16l-1.8-4.2L6 10l4.2-1.8zM18 16l.9 2.1L21 19l-2.1.9L18 22l-.9-2.1L15 19l2.1-.9z',
   agents:'M7 8h10a3 3 0 0 1 3 3v3a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-3a3 3 0 0 1 3-3zM12 4v4M9 13h.01M15 13h.01'
 };
-const GROUPS=[
+/* Rail CÂBLÉ DE REPLI (lot G2) — la source de vérité du rail est `DATA.ui` (data/ui_sections.json).
+   Ce tableau ne sert que si le descripteur est absent : coffre construit sans lui, ou build dégradé.
+   Ne pas y ajouter d'onglet : une vue nouvelle se déclare dans le descripteur, pas ici. */
+const GROUPS_FALLBACK=[
   // Le Tableau de bord n'a plus de sous-onglet : la Documentation est fusionnée dans sa page.
   ['overview','Tableau de bord',[['overview','Tableau de bord']]],
   ['bu','Business Units',[['bu','Business Units']]],
@@ -2078,11 +2082,162 @@ const GROUPS=[
   ['ia','IA',[['ia','IA']]],
   ['agents','Agents',[['agents','Agents']]],
 ];
+let GROUPS=GROUPS_FALLBACK;
+
+/* ══ G2 — VUES SOFTCODE ═══════════════════════════════════════════════════════════════════
+   Une vue est soit DÉDIÉE (fonction renderXxx + <section> câblée dans la page), soit décrite
+   dans DATA.ui.views par des blocs rendus ici. Ajouter une vue générique = éditer le JSON.
+   Règle de dégradation : une vue générique sans donnée ne s'affiche PAS dans le rail. */
+const pathGet=p=>String(p||'').split('.').filter(Boolean).reduce((a,k)=>(a==null?a:a[k]),DATA);
+const viewSpec=v=>((DATA&&DATA.ui&&DATA.ui.views)||{})[v]||null;
+function rowsOf(src){
+  const v=pathGet(src);
+  if(Array.isArray(v))return v;
+  // un objet indexé (ex. serveurs sondés) se lit comme des lignes, la clé devient une colonne
+  if(v&&typeof v==='object')return Object.entries(v).map(([k,o])=>(o&&typeof o==='object')?{_key:k,...o}:{_key:k,value:o});
+  return [];
+}
+function blocksOf(sp){ return sp?(sp.blocks||[{render:sp.render,source:sp.source,columns:sp.columns}]):[]; }
+// « ce bloc a-t-il de quoi s'afficher ? » — tableau non vide, objet non vide, ou scalaire présent
+function blockHasData(b){ const v=pathGet(b.source); return Array.isArray(v)?v.length>0:(v&&typeof v==='object'?Object.keys(v).filter(k=>!k.startsWith('_')).length>0:!!v); }
+function viewHasData(v){
+  const sp=viewSpec(v);
+  if(!sp)return !!document.querySelector(`.view[data-v="${v}"]`);   // vue dédiée : câblée dans la page
+  return blocksOf(sp).some(blockHasData);
+}
+function buildGroups(){
+  const ui=(DATA&&DATA.ui)||null;
+  if(!ui||!Array.isArray(ui.groups)||!ui.groups.length){ GROUPS=GROUPS_FALLBACK; return; }
+  GROUPS=ui.groups.map(g=>[g.id,g.label,(g.children||[]).filter(c=>viewHasData(c.id)).map(c=>[c.id,c.label])])
+                  .filter(g=>g[2].length);
+  if(!GROUPS.length)GROUPS=GROUPS_FALLBACK;
+}
+/* Les vues génériques n'ont pas de <section> dans la page : on les matérialise au démarrage,
+   à côté des vues dédiées, pour que showChild/lazyView les traitent sans cas particulier. */
+function ensureSections(){
+  const host=document.querySelector('.view[data-v="health"]'); if(!host)return;
+  for(const v of Object.keys((DATA&&DATA.ui&&DATA.ui.views)||{})){
+    if(document.querySelector(`.view[data-v="${v}"]`))continue;
+    const s=document.createElement('section'); s.className='view'; s.dataset.v=v; host.parentNode.appendChild(s);
+  }
+}
+/* ── primitives de rendu ───────────────────────────────────────────────────────────────── */
+const GEN_BADGE={ok:'#4ED8A0',actif:'#4ED8A0',active:'#4ED8A0',live:'#4ED8A0',vert:'#4ED8A0',
+  perime:'#E9A83C',périmé:'#E9A83C',stale:'#E9A83C',partiel:'#E9A83C','en pause':'#AEB4BC',incubation:'#E9A83C',
+  ko:'#F58C85','échec':'#F58C85',echec:'#F58C85',critique:'#F58C85','élevée':'#E9A83C',elevee:'#E9A83C',
+  moyenne:'#AEB4BC',faible:'#98A2B0','non mesuré':'#A8AEB6'};
+function genBadge(v,colors){
+  if(v==null||v==='')return '<span class="muted">—</span>';
+  const k=String(v).toLowerCase(), c=(colors&&colors[k])||GEN_BADGE[k]||'#A8AEB6';
+  return `<span style="font-size:11px;font-weight:600;padding:2px 9px;border-radius:999px;background:${c}1c;color:${c};border:1px solid ${c}3a;white-space:nowrap">${esc(v)}</span>`;
+}
+function genCell(row,col){
+  const v=row[col.key];
+  let html;
+  switch(col.fmt){
+    case 'mono': html=v?`<span class="mono" style="font-size:11.5px">${esc(v)}</span>`:'<span class="muted">—</span>'; break;
+    case 'num': html=(v==null||v==='')?'<span class="muted">—</span>':`<span class="mono">${esc(v)}${esc(col.suffix||'')}</span>`; break;
+    case 'bool': html=v?'✓':'<span class="muted">—</span>'; break;
+    case 'date': html=v?`<span class="mono" style="font-size:11.5px">${esc(String(v).slice(0,10))}</span>`:'<span class="muted">—</span>'; break;
+    case 'ago': {
+      if(!v){ html='<span class="muted">jamais</span>'; break; }
+      const days=(Date.now()-new Date(v))/864e5, lim=col.staleFrom?Number(row[col.staleFrom]||0):0;
+      const late=lim>0&&days>lim, c=late?'#E9A83C':'var(--tx2)';
+      html=`<span class="mono" style="font-size:11.5px;color:${c}" data-tip="${esc(String(v).slice(0,16).replace('T',' '))}${late?` · cadence ${lim} j dépassée`:''}">${late?'⚠ ':''}il y a ${esc(ago(v)||'0 min')}</span>`;
+      break; }
+    case 'badge': html=genBadge(v,col.colors); break;
+    case 'pill': html=v?`<span class="pill">${esc(v)}</span>`:'<span class="muted">—</span>'; break;
+    case 'list': html=asList(v,col.itemKey,col.max); break;
+    case 'url': html=v?lnk(String(v).startsWith('http')?v:'https://'+v,v):'<span class="muted">—</span>'; break;
+    default: html=(v==null||v==='')?'<span class="muted">—</span>':esc(v);
+  }
+  if(col.strong)html=`<b>${html}</b>`;
+  return `<td${col.muted?' class="muted"':''}${col.fmt==='text'&&col.muted?' style="font-size:11.5px"':''}>${html}</td>`;
+}
+function genTable(b){
+  let rows=rowsOf(b.source);
+  if(b.sort)rows=[...rows].sort((x,y)=>{const a=x[b.sort],c=y[b.sort];const r=(a==null?-1:c==null?1:String(a)<String(c)?-1:String(a)>String(c)?1:0);return b.order==='desc'?-r:r;});
+  // colonnes non déclarées : union des clés de TOUTES les lignes (une donnée hétérogène — le cas
+  // normal quand une source mélange entrées curées et auto-découvertes — ne perd pas ses champs)
+  const auto=[...new Set(rows.flatMap(r=>Object.keys(r||{})))].filter(k=>!k.startsWith('_'))
+    .map(k=>({key:k,label:k,fmt:Array.isArray((rows.find(r=>r&&r[k])||{})[k])?'list':'text'}));
+  const cols=b.columns||auto;
+  const body=rows.map(r=>`<tr>${cols.map(c=>genCell(r,c)).join('')}</tr>`).join('')
+    ||`<tr><td colspan="${cols.length}" class="muted">—</td></tr>`;
+  return `<div style="overflow-x:auto"><table><thead><tr>${cols.map(c=>`<th>${esc(c.label||c.key)}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+/* kv : un objet quelconque → lignes clé/valeur, FORME DÉDUITE. C'est cette primitive qui rend
+   impossible le « [object Object] » quand un collecteur passe d'un scalaire à un tableau. */
+function kvRows(o,opts,depth){
+  const labels=(opts&&opts.labels)||{}, skip=new Set((opts&&opts.skip)||[]), d=depth||0;
+  return Object.entries(o).filter(([k])=>!k.startsWith('_')&&!skip.has(k)).map(([k,v])=>{
+    const lab=esc(labels[k]||k);
+    let val;
+    if(Array.isArray(v))val=v.length?`<span class="mono">${v.length}</span> · ${asList(v,opts&&opts.itemKey,(opts&&opts.max)||8)}`:'<span class="muted">—</span>';
+    else if(v&&typeof v==='object'){
+      const inner=kvRows(v,opts,d+1);
+      val=(d<1&&inner)
+        ? `<details style="display:inline-block;vertical-align:top"><summary class="muted" style="cursor:var(--cursor-hot);font-size:11.5px">${Object.keys(v).filter(x=>!x.startsWith('_')).length} champs</summary><div style="margin:5px 0 0 2px;border-left:2px solid var(--bd);padding-left:10px">${inner}</div></details>`
+        : `<span class="muted">${Object.keys(v).length} champs</span>`;
+    }
+    else if(v==null||v==='')val='<span class="muted">—</span>';
+    else val=esc(v);
+    return `<div class="row"><b style="min-width:150px;display:inline-block;vertical-align:top">${lab}</b> ${val}</div>`;
+  }).join('');
+}
+function genKv(b){
+  const o=pathGet(b.source);
+  if(!o||typeof o!=='object')return '<div class="muted">—</div>';
+  return `<div class="card">${kvRows(o,b)||'<div class="muted">—</div>'}</div>`;
+}
+/* kvEach : une fiche par entrée d'un objet conteneur (ex. chaque fournisseur de DATA.cloud).
+   C'est ce qui rend la vue utile à un tiers : un fournisseur qu'il a et que la carte d'origine
+   n'a jamais vu s'affiche entièrement, sans une ligne de code NI d'entrée de descripteur. */
+function genKvEach(b){
+  const o=pathGet(b.source); if(!o||typeof o!=='object')return '';
+  const skip=new Set(b.skipKeys||[]);
+  const parts=Object.entries(o).filter(([k,v])=>!k.startsWith('_')&&!skip.has(k)&&v&&typeof v==='object'&&!Array.isArray(v))
+    .map(([k,v])=>`<h2 class="sec">${iconHtml(k)}${esc((b.labels&&b.labels[k])||k)}</h2><div class="card">${kvRows(v,b)}</div>`);
+  return parts.join('')||`<div class="muted" style="font-size:12px">${b.empty||'—'}</div>`;
+}
+/* findings : liste {severity,label,where,fix} — forme commune au diagnostic et aux expositions.
+   Toute dimension future s'affiche sans une ligne de code (lot G3). */
+const SEV_CLR={critical:'#F58C85',high:'#F58C85',medium:'#E9A83C',low:'#98A2B0',info:'#A8AEB6'};
+const SEV_LBL={critical:'critique',high:'élevé',medium:'moyen',low:'faible',info:'info'};
+function genFindings(items,opts){
+  const list=(items||[]).slice().sort((a,b)=>{const o={critical:0,high:1,medium:2,low:3,info:4};return (o[a.severity]??9)-(o[b.severity]??9);});
+  if(!list.length)return `<div class="muted" style="font-size:12px">${(opts&&opts.empty)||'Rien à signaler.'}</div>`;
+  return `<div style="display:flex;flex-direction:column;gap:8px">${list.map(it=>{
+    const c=SEV_CLR[it.severity]||'#A8AEB6';
+    return `<div style="border-left:3px solid ${c};background:var(--card2);border-radius:0 10px 10px 0;padding:9px 13px">
+      <div style="display:flex;gap:9px;align-items:baseline;flex-wrap:wrap">
+        <span style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:${c}">${esc(SEV_LBL[it.severity]||it.severity||'—')}</span>
+        <b style="font-size:12.5px;line-height:1.45">${esc(it.label||'')}</b>
+      </div>
+      ${it.where?`<div class="muted mono" style="font-size:11px;margin-top:3px">📍 ${esc(it.where)}</div>`:''}
+      ${it.fix?`<div style="font-size:11.5px;margin-top:4px;color:var(--tx2);line-height:1.5">→ ${esc(it.fix)}</div>`:''}
+    </div>`;}).join('')}</div>`;
+}
+const GEN_RENDERERS={table:genTable,kv:genKv,kvEach:genKvEach,findings:b=>genFindings(rowsOf(b.source),b)};
+function renderGeneric(v){
+  const sec=document.querySelector(`.view[data-v="${v}"]`), sp=viewSpec(v); if(!sec||!sp)return;
+  const filled=blocksOf(sp).filter(b=>GEN_RENDERERS[b.render]&&blockHasData(b));
+  if(!filled.length){ sec.innerHTML=`<div class="muted" style="font-size:12px">${sp.empty||'Aucune donnée pour cette vue.'}</div>`; return; }
+  sec.innerHTML=(sp.intro?`<div class="muted" style="font-size:12px;margin-bottom:14px">${sp.intro}</div>`:'')
+    +filled.map(b=>{const n=rowsOf(b.source).length;
+      return (b.title?`<h2 class="sec">${esc(b.title)}${n?`<span class="cnt">${n}</span>`:''}</h2>`:'')+GEN_RENDERERS[b.render](b);}).join('');
+}
+function renderGenericAll(){ for(const v of Object.keys((DATA&&DATA.ui&&DATA.ui.views)||{}))renderGeneric(v); }
+/* ═════════════════════════════════════════════════════════════════════════════════════════ */
+
 const groupOf=v=>GROUPS.find(g=>g[2].some(c=>c[0]===v));
 const labelOf=v=>{const g=groupOf(v); const c=g&&g[2].find(x=>x[0]===v); return c?c[1]:v;};
 let curGroup=null, groupChild={}, pendingGroup=null, healthOpen=false;
 function childBadge(v){
   let n='', crit=false;
+  // vue générique : le badge est déclaré dans le descripteur (`badge:"count"`), pas codé ici
+  const gsp=viewSpec(v);
+  if(gsp){ if(gsp.badge==='count'){ const t=blocksOf(gsp).reduce((s,b)=>s+rowsOf(b.source).length,0); if(t)n=t; } return {n:n===''?null:n, crit:false}; }
   if(v==='security'){ if(DATA.kpis.exposures)n=DATA.kpis.exposures; crit=DATA.kpis.critical>0; }
   else if(v==='autos')n=DATA.kpis.automations;
   else if(v==='agents'&&DATA.kpis.agents)n=DATA.kpis.agents;
@@ -2219,8 +2374,20 @@ function renderHealth(){
       le vocabulaire fermé, l'intégrité du graphe, la traçabilité des exécutions, les contrats MCP
       et la sauvegarde du code.
       ${grises.length?`<br><b>⚠ ${grises.length} dimension(s) non mesurée(s), hors note :</b> ${esc(grises.map(x=>x.label).join(', '))} — une absence de mesure n'est pas un zéro.`:''}
-      Détail interrogeable via l'outil MCP <b>karto_diagnostics</b>.
-    </div>`;
+      Même calcul que l'outil MCP <b>karto_diagnostics</b> et que <span class="mono">node karto-diagnostics.mjs</span>.
+    </div>
+    ${(()=>{   // G3 — le détail des constats, déjà embarqué dans le coffre, cesse d'être réservé au MCP
+      const withItems=[...notees].filter(x=>(x.items||[]).length).sort((a,b)=>a.score-b.score);
+      if(!withItems.length)return '';
+      const tot=withItems.reduce((n,x)=>n+x.items.length,0);
+      return `<h2 class="sec" style="margin:22px 0 4px">Ce qu'il y a à corriger<span class="cnt">${tot}</span></h2>
+      <div class="muted" style="font-size:11.5px;margin:0 0 12px">Chaque dimension déplie ses constats : quoi, où, et le correctif. Trié du pire score au meilleur — une dimension ajoutée au diagnostic apparaît ici sans toucher au front.</div>
+      ${withItems.map(dim=>{const c=healthColor(dim.score,54,58);
+        return `<details class="skills-fold" style="margin-bottom:9px">
+          <summary><span style="font-size:12.5px;font-weight:600">${esc(dim.label)} <span class="mono" style="color:${c}">${dim.score}</span> <span class="cnt">${dim.items.length}</span></span>${dim.note?`<span class="muted" style="font-size:11px;margin-left:8px">${esc(dim.note)}</span>`:''}</summary>
+          <div style="margin-top:9px">${genFindings(dim.items)}</div>
+        </details>`;}).join('')}`;
+    })()}`;
 }
 
 /* Jauge de santé de la colonne gauche — même source que la vue « Santé du système »
@@ -2383,12 +2550,17 @@ function renderCloud(){
         <td>${sbBadge(p.status)}</td><td>${appRef(p.app,p.appNote)}</td></tr>`).join('');
   const off='';
   const net=c.netlify.sites.map(s=>`<span class="netchip">${appRef(s.project,s.note)}</span>`).join('');
-  const hz=c.hetzner.workloads.map(w=>`<tr><td><b>${esc(w.name)}</b></td><td>${esc(w.trigger)}</td><td class="muted">${esc(w.does)}</td></tr>`).join('');
+  // une charge curée porte trigger/does ; une charge auto-découverte (service systemd, dossier
+  // applicatif) porte path/note. Rendre les deux, sinon 8 lignes sur 20 affichaient « undefined ».
+  const hz=c.hetzner.workloads.map(w=>`<tr><td><b>${esc(w.name)}</b>${w.path?`<div class="muted mono" style="font-size:11px">${esc(w.path)}</div>`:''}</td><td>${w.trigger?esc(w.trigger):'<span class="muted">—</span>'}</td><td class="muted">${esc(w.does||w.note||'—')}</td></tr>`).join('');
   const provCell=p=>p?appCell(p):'<span class="muted">—</span>';
   const regCell=r=>(!r||r==='à confirmer'||r==='a confirmer')?'<span class="muted">à confirmer</span>':appCell(r);
   const doms=(((c.domains&&c.domains.list)||[]).map(d=>{
     const cc=CRIT[d.criticite]||'var(--tx2)';
-    const subs=(d.subdomains||[]).map(s=>`<div class="muted" style="font-size:11px;margin-top:2px">↳ ${esc(s.name)} → ${esc(s.target)}${s.note?' · '+esc(s.note):''}</div>`).join('');
+    // un sous-domaine peut arriver en chaîne (collecte brute) ou en objet {name,target,note} :
+    // on ne rend une flèche que s'il y a une cible, sinon on affichait « undefined → undefined ».
+    const subs=(d.subdomains||[]).map(x=>{const s=typeof x==='string'?{name:x}:(x||{});
+      return `<div class="muted" style="font-size:11px;margin-top:2px">↳ ${esc(s.name||'—')}${s.target?' → '+esc(s.target):''}${s.note?' · '+esc(s.note):''}</div>`;}).join('');
     const uses=(d.usedBy||[]).map(u=>`<div>${esc(u)}</div>`).join('')||'<span class="muted">—</span>';
     return `<tr>
       <td><div class="appcell">${iconHtml(d.name)}<b>${lnk('https://'+d.name,d.name)}</b></div>${subs}</td>
@@ -2411,10 +2583,6 @@ function renderCloud(){
     <div class="netrow">${net}</div>
     <h2 class="sec"><span class="dot-s" style="background:var(--orange)"></span>Hetzner — ${esc(c.hetzner.vps)}</h2>
     <table><thead><tr><th>Charge</th><th>Déclencheur</th><th>Rôle</th></tr></thead><tbody>${hz}</tbody></table>
-    <h2 class="sec"><span class="dot-s" style="background:var(--teal)"></span>Cloudflare</h2>
-    <div class="card"><div class="row"><b>Domaine</b> ${esc(c.cloudflare.domain)}</div>
-      <div class="row">${c.cloudflare.workers} Worker · ${c.cloudflare.kvNamespaces} KV · ${c.cloudflare.d1Databases} D1 · R2 ${esc(c.cloudflare.r2)}</div>
-      <div class="row muted">${esc(c.cloudflare.note)}</div></div>
     <h2 class="sec"><span class="dot-s" style="background:var(--purple)"></span>GitHub — ${esc(c.github.account)}</h2>
     <table><thead><tr><th>Repo</th><th>Visibilité</th><th>Ouverture</th><th>Description</th></tr></thead><tbody>
       ${c.github.repos.map(r=>`<tr><td><b>${lnk('https://github.com/'+r.name,r.name)}</b></td><td>${esc(r.visibility)}</td><td>${r.openness?`<span class="muted2">${esc(OPEN_LABEL[r.openness]||r.openness)}</span>`:'<span class="muted">—</span>'}</td><td class="muted">${esc(r.desc||'—')}</td></tr>`).join('')}</tbody></table>`;
@@ -3015,7 +3183,26 @@ function renderConnectors(){
   const cxAuth=co=> co.secret                           // un PAT/clé est un SECRET (l'auth du bridge) -> lien onglet Secrets, jamais un connecteur en soi
     ? `<span style="${lnkS}" onclick="gotoTab('secrets')">🔑 ${esc(co.secret)}</span>`
     : '<span class="muted">— (local)</span>';
-  const cxRole=co=> co.tools&&co.tools.length?esc(co.tools.length+' outils'):(co.note?esc(co.note):'—');
+  /* G5 — DÉCLARÉ ↔ MESURÉ. La carte annonce un contrat ; `mcp-probe.mjs` mesure le vrai par
+     handshake JSON-RPC. Jointure par clé normalisée (« karto-mcp » ↔ « karto »). Pas de sonde
+     pour ce bridge → aucune colonne inventée : on n'affiche rien plutôt qu'un faux zéro. */
+  const mcpKey=s=>String(s||'').toLowerCase().replace(/mcp/g,'').replace(/[^a-z0-9]/g,'');
+  const probeIdx={}; for(const [k,v] of Object.entries((DATA.mcpProbe&&DATA.mcpProbe.servers)||{}))probeIdx[mcpKey(k)]=v;
+  const probeOf=co=>probeIdx[mcpKey(co.id)]||probeIdx[mcpKey(co.name)]||null;
+  const cmpPill=(txt,c,tip)=>`<span style="font-size:10.5px;padding:1px 7px;border-radius:999px;background:${c}14;color:${c};border:1px solid ${c}33;white-space:nowrap"${tip?` data-tip="${esc(tip)}"`:''}>${txt}</span>`;
+  const cxMeasured=co=>{
+    const p=probeOf(co); if(!p)return '';
+    if(p.mesure!=='mesuré')return `<div style="margin-top:3px">${cmpPill('non mesuré','#A8AEB6',p.motif||p.raison||'serveur injoignable au moment de la sonde')}</div>`;
+    const decl=(co.tools||[]).length, ecarts=[];
+    if(decl&&decl!==p.total)ecarts.push(`${p.total} outils mesurés / ${decl} déclarés`);
+    if(co.readonly===true&&p.mutateurs>0)ecarts.push(`${p.mutateurs} mutateur(s) alors que le bridge est déclaré en lecture`);
+    if(p.sansAnnotation>0)ecarts.push(`${p.sansAnnotation} outil(s) sans annotation d'intention`);
+    if((p.incoherents||[]).length)ecarts.push(`${p.incoherents.length} annotation(s) incohérente(s)`);
+    const c=ecarts.length?(co.readonly===true&&p.mutateurs>0?'#F58C85':'#E9A83C'):'#4ED8A0';
+    const lbl=ecarts.length?`⚠ ${p.total} mesurés`:`✓ ${p.total} mesurés`;
+    return `<div style="margin-top:3px">${cmpPill(lbl,c,(ecarts.length?ecarts.join(' · '):'contrat conforme à la déclaration')+` · handshake ${String((DATA.mcpProbe||{}).measuredAt||'').slice(0,10)}`)}</div>`;
+  };
+  const cxRole=co=> (co.tools&&co.tools.length?esc(co.tools.length+' outils'):(co.note?esc(co.note):'—'))+cxMeasured(co);
   const nameCell=co=> `${appCell(co.name)}${co.setup?`<div class="muted" style="font-size:10px;margin-top:2px">↻ ${esc(co.setup)}</div>`:''}`;   // ↻ = remise en place migration
   const cxRow=(co,i)=>`<tr class="cxrow" data-cx="${i}" style="cursor:help"><td>${nameCell(co)}</td><td>${srcBadge(co)}</td><td>${esc(co.backend||'—')}</td><td class="muted">${cxRole(co)}</td><td>${cxAuth(co)}</td></tr>`;
   const cxSection=Object.keys(accessMeta).map(t=>{const rows=cx.map((co,i)=>[co,i]).filter(([co])=>co.category!=='control'&&accessOf(co)===t);if(!rows.length)return '';return `<h2 class="sec"><span class="dot-s" style="background:${accessMeta[t].dot}"></span>${accessMeta[t].label} <span class="muted" style="font-weight:400;font-size:11px">(${rows.length})</span></h2><table><thead><tr><th>Bridge IA</th><th>Type</th><th>Backend</th><th>Outils / rôle</th><th>🔑 Auth</th></tr></thead><tbody>${rows.map(([co,i])=>cxRow(co,i)).join('')}</tbody></table>`;}).join('');
@@ -3025,7 +3212,6 @@ function renderConnectors(){
   const sc=m.scenarios.map(s=>`<tr><td><div class="appcell">${iconHtml('Make')}${lnk('https://eu2.make.com/'+makeTeam()+'/scenarios/'+s.id+'/edit',esc(s.name))}</div></td><td>${s.active?'<span class="badge bd-ok">actif</span>':'<span class="badge bd-off">inactif</span>'}</td><td class="mono">${esc(s.trigger)}</td><td class="muted">${esc(s.does)}</td></tr>`).join('');
   const cn=m.connections.map(c=>`<tr><td>${appCell(c.app)}</td><td>${c.account&&c.account!=='—'?lnk('mailto:'+c.account,esc(c.account)):'<span class="muted">—</span>'}</td><td>${esc(c.type)}</td><td>${esc(c.expire||'')||'<span class="muted">—</span>'}</td><td class="muted">${esc((c.usedBy||[]).join(', '))}</td></tr>`).join('');
   const wh=m.webhooks.map(w=>`<tr><td><div class="appcell">${iconHtml('Make')}<b>${esc(w.name)}</b></div></td><td>${esc(w.type)}</td><td>${lnk(w.url,'…'+esc(w.url.slice(-22)))}</td><td>${w.enabled?'<span class="badge bd-ok">on</span>':'<span class="badge bd-off">off</span>'}</td><td class="muted">${esc(w.scenario)}${w.queue?` · file ${w.queue}`:''}</td></tr>`).join('');
-  const ga=DATA.cloud.googleDrive;
   el.innerHTML=`
     <div class="muted" style="font-size:11.5px;margin:0 0 10px">Bridges de l'IA — ce à quoi Claude est branché pour lire/modifier ton SI (MCP), classé par accès. Les PAT/clés vivent dans l'onglet Secrets ; ici c'est l'auth du bridge (🔑 → Secrets). ↻ = comment le remettre lors d'une migration. Survole une ligne data/infra pour son schéma.</div>
     ${cxSection}
@@ -3037,15 +3223,31 @@ function renderConnectors(){
     <table><thead><tr><th>App</th><th>Compte</th><th>Type</th><th>Expire</th><th>Utilisée par</th></tr></thead><tbody>${cn}</tbody></table>
     <h2 class="sec"><span class="dot-s" style="background:var(--rose)"></span>Webhooks</h2>
     <table><thead><tr><th>Webhook</th><th>Type</th><th>URL</th><th>État</th><th>Scénario</th></tr></thead><tbody>${wh}</tbody></table>
-    <h2 class="sec">${iconHtml('Google')} Google Drive — ${esc(ga.account)}</h2>
-    <div class="card"><div class="row"><b>Dossiers clés</b> ${ga.keyFolders.map(f=>esc(f.name)).join(' · ')}</div>
-    <div class="row"><b>Sheets pilotés</b> ${ga.keySheets.map(s=>esc(s.name)).join(' · ')}</div>
-    <div class="row"><b>Service account</b> <span class="mono">${esc(ga.serviceAccount)}</span></div></div>`;
+    <div class="muted" style="font-size:11.5px;margin-top:18px">Fiches fournisseur détaillées (Drive, Cloudflare, registrar…) : onglet <b>Bases &amp; flux › Fournisseurs</b>.</div>`;
   el.querySelectorAll('.cxrow').forEach(r=>{const co=cx[+r.dataset.cx];if(!co)return;const chain=(co.chain&&co.chain.length)?co.chain:[{n:co.vendor+' · API',k:'api',app:co.vendor},{n:'Authentification',k:'check',note:(co.auth||[]).map(a=>a.name).join(' · ')||co.secret||'—'}];r.addEventListener('mouseenter',()=>{clearTimeout(_ctT);_ctT=setTimeout(()=>showChainTip(r,{name:co.name,enabled:true,chain}),120);});r.addEventListener('mouseleave',()=>{clearTimeout(_ctT);hideChainTip();});});
 }
 
 /* ---------- SECRETS ---------- */
 function esc(v){return String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+/* Rendu TOLÉRANT À LA FORME — un collecteur qui passe d'un scalaire à un tableau (ou l'inverse)
+   ne doit plus produire « [object Object] » ni « undefined » à l'écran. Base des primitives G2. */
+function asCount(v,label){
+  if(Array.isArray(v))return `${v.length} ${esc(label)}`;
+  if(typeof v==='number')return `${v} ${esc(label)}`;
+  if(v==null||v==='')return `<span class="muted">${esc(label)} —</span>`;
+  return `<span class="muted">${esc(label)} ${esc(v)}</span>`;   // ex. « non mesuré » : jamais lu comme 0
+}
+function asList(v,key,max){
+  const m=max||6;
+  if(Array.isArray(v)){
+    if(!v.length)return '<span class="muted">—</span>';
+    const names=v.map(x=>(x&&typeof x==='object')?(x[key||'name']??JSON.stringify(x)):x);
+    const head=names.slice(0,m).map(n=>esc(n)).join(' · ');
+    return head+(names.length>m?` <span class="muted">+${names.length-m}</span>`:'');
+  }
+  if(v==null||v==='')return '<span class="muted">—</span>';
+  return esc(v);
+}
 function setEdit(v){EDIT=v;renderSecrets();renderLogins();renderAccounts();renderCloud();renderInventaire();}
 /* ---------- clipboard ---------- */
 function fallbackCopy(text,cb){const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');cb&&cb();}catch(e){}ta.remove();}
