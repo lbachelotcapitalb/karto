@@ -64,6 +64,11 @@ function normalize(m, src) {
     name: m.name || src.id,
     summary: m.summary || '',
     status: m.status || 'actif',
+    // D8 — conservés, alors qu'ils étaient jetés : `schema` dit dans quel FORMAT la fiche est
+    // écrite (il doit être le même partout — trois valeurs différentes = trois vérités), et
+    // `updated` dit de quand elle date. Sans eux, ni versionnage ni fraîcheur.
+    schema: m.schema || null,
+    updated: m.updated || null,
     source: 'manifest',
     project: src.project || m.name || null,
     manifest: src.path,
@@ -89,6 +94,19 @@ for (const src of manifests) {
   manifestAgents.push(normalize(m, src));
 }
 
+/* D8 — le `manifest` d'une entrée MANUELLE n'était jamais vérifié. Un manifeste déclaré
+ * dans karto.config.json est contrôlé (l. 86) ; celui qu'une entrée manuelle mentionne ne
+ * l'était pas — d'où `~/Desktop/monapp/agent.json`, chemin d'un dossier renommé en
+ * `monapp` il y a des mois, affiché comme une source de vérité. Un pointeur mort est
+ * pire qu'un champ vide : il fait croire qu'une fiche est adossée à quelque chose.
+ * On ne le supprime pas en silence — on le NOMME et on le met à null. */
+const pointeursMorts = [];
+for (const a of manual) {
+  if (!a.manifest) continue;
+  const p = expandHome(a.manifest.startsWith('cartographie-it/') ? join(__dir, a.manifest.slice('cartographie-it/'.length)) : a.manifest);
+  if (!existsSync(p)) { pointeursMorts.push(`${a.id} → ${a.manifest}`); a.manifest = null; }
+}
+
 // fusion : manifeste l'emporte sur un manuel de même id
 const byId = new Map();
 for (const a of [...manual, ...manifestAgents]) byId.set(a.id, a);
@@ -104,3 +122,11 @@ writeFileSync(OUT, JSON.stringify({
 (await import('./karto-sources.mjs')).touchSource(__dir, 'agents');
 const nbDiscovered = manifests.filter(m => m.discovered).length;
 console.log(`✓ ${agents.length} agents → data/agents.json (${manifestAgents.length} manifeste(s) dont ${nbDiscovered} auto-découvert(s), ${manual.length} manuel(s))`);
+// D8 — versionnage et fraîcheur : un manifeste sans `updated` ne dit pas s'il décrit encore
+// l'agent, et des `schema` divergents signalent des formats qui ont cessé d'être le même.
+const schemas = [...new Set(agents.map(a => a.schema).filter(Boolean))];
+const sansDate = agents.filter(a => a.manifest && !a.updated).map(a => a.id);
+console.log(`  registre : ${agents.filter(a => a.manifest).length} adossé(s) à un manifeste · ${pointeursMorts.length} pointeur(s) mort(s) · schéma(s) en usage : ${schemas.join(', ') || '—'}`);
+if (pointeursMorts.length) console.warn(`  ⚠ pointeur(s) mort(s) remis à null (le fichier n'existe pas) : ${pointeursMorts.join(' · ')}`);
+if (schemas.length > 1) console.warn(`  ⚠ ${schemas.length} versions de schéma coexistent — le format est censé être UN : ${schemas.join(' · ')}`);
+if (sansDate.length) console.warn(`  ⚠ manifeste sans \`updated\` (fraîcheur inconnue) : ${sansDate.join(', ')}`);

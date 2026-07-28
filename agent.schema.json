@@ -4,65 +4,153 @@
   "title": "karto — manifeste d'agent (agent.json)",
   "description": "Décrit un agent (automatisation pilotée par une IA) pour que karto le cartographie : qui il est, ce qu'il sait faire, à quoi il se connecte, ses garde-fous. On dépose un `agent.json` à la racine d'un projet, puis on le déclare dans karto.config.json > agents.manifests[] (ou il est auto-découvert sous scan.projectRoots). Le collecteur agents-collect.mjs le normalise en entités/edges du graphe. GÉNÉRIQUE et publiable : c'est le SCHÉMA, jamais un agent réel. Aucune valeur de secret ici — uniquement des emplacements (ref).",
   "type": "object",
-  "required": ["name"],
+  "required": [
+    "schema",
+    "name"
+  ],
   "additionalProperties": true,
   "properties": {
-    "name": { "type": "string", "description": "Nom lisible de l'agent (pas un id technique). Ex. « Veille SEO hebdo »." },
-    "id": { "type": "string", "description": "Identifiant stable, kebab-case. Optionnel — dérivé du nom si absent. Sert à la traçabilité (qui a fait quoi) et au kill-switch par agent." },
-    "owner": { "type": "string", "description": "Responsable humain de l'agent (traçabilité). Optionnel." },
-    "summary": { "type": "string", "description": "Une phrase : ce que fait l'agent et pourquoi." },
-    "status": { "type": "string", "enum": ["actif", "pause", "arrêté"], "default": "actif", "description": "État courant. « pause »/« arrêté » = kill-switch au niveau agent." },
+    "schema": {
+      "type": "string",
+      "const": "karto.agent/1",
+      "description": "Version du FORMAT de ce manifeste — pas un identifiant de projet. Elle doit être la même dans tous les agent.json : trois valeurs différentes (monagent.agent/1, monautreagent.agent/1…) décrivaient le même format et faisaient croire à trois formats. Corrigé en D8 le 26/07/2026."
+    },
+    "name": {
+      "type": "string",
+      "description": "Nom lisible de l'agent (pas un id technique). Ex. « Veille SEO hebdo »."
+    },
+    "id": {
+      "type": "string",
+      "description": "Identifiant stable, kebab-case. Optionnel — dérivé du nom si absent. Sert à la traçabilité (qui a fait quoi) et au kill-switch par agent."
+    },
+    "owner": {
+      "type": "string",
+      "description": "Responsable humain de l'agent (traçabilité). Optionnel."
+    },
+    "summary": {
+      "type": "string",
+      "description": "Une phrase : ce que fait l'agent et pourquoi."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "actif",
+        "pause",
+        "arrêté"
+      ],
+      "default": "actif",
+      "description": "État courant. « pause »/« arrêté » = kill-switch au niveau agent."
+    },
     "skills": {
-      "type": "array", "description": "Ce que l'agent sait faire (capacités).",
+      "type": "array",
+      "description": "Ce que l'agent sait faire (capacités).",
       "items": {
-        "type": "object", "required": ["name"], "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "additionalProperties": true,
         "properties": {
-          "name": { "type": "string", "description": "Nom de la capacité. Ex. « rédiger un article »." },
-          "effect": { "type": "string", "description": "Effet concret produit. Ex. « publie un brouillon en file »." }
+          "name": {
+            "type": "string",
+            "description": "Nom de la capacité. Ex. « rédiger un article »."
+          },
+          "effect": {
+            "type": "string",
+            "description": "Effet concret produit. Ex. « publie un brouillon en file »."
+          }
         }
       }
     },
     "connects_to": {
-      "type": "array", "description": "Ce à quoi l'agent se connecte : hôtes, services, bases, dépôts, canaux, MCP.",
+      "type": "array",
+      "description": "Ce à quoi l'agent se connecte : hôtes, services, bases, dépôts, canaux, MCP.",
       "items": {
-        "type": "object", "required": ["type", "name"], "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "type",
+          "name"
+        ],
+        "additionalProperties": true,
         "properties": {
-          "type": { "type": "string", "description": "Nature : host | service | database | repo | channel | mcp | api…" },
-          "name": { "type": "string", "description": "Nom de la cible. Ex. « Supabase », « mon-vps »." },
-          "note": { "type": "string", "description": "Précision libre." },
-          "ref": { "type": "string", "description": "Référence d'EMPLACEMENT (jamais une valeur de secret) : chemin, alias, id." }
+          "type": {
+            "type": "string",
+            "description": "Nature : host | service | database | repo | channel | mcp | api…"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nom de la cible. Ex. « Supabase », « mon-vps »."
+          },
+          "note": {
+            "type": "string",
+            "description": "Précision libre."
+          },
+          "ref": {
+            "type": "string",
+            "description": "Référence d'EMPLACEMENT (jamais une valeur de secret) : chemin, alias, id."
+          }
         }
       }
     },
     "data_stores": {
-      "type": "object", "description": "Où l'agent lit/écrit ses données.",
+      "type": "object",
+      "description": "Où l'agent lit/écrit ses données.",
       "additionalProperties": true,
       "properties": {
-        "backend": { "type": "string", "description": "Ex. « supabase », « sqlite », « fichiers »." }
+        "backend": {
+          "type": "string",
+          "description": "Ex. « supabase », « sqlite », « fichiers »."
+        }
       }
     },
     "crons_live": {
-      "type": "array", "description": "Déclencheurs planifiés réellement en place.",
+      "type": "array",
+      "description": "Déclencheurs planifiés réellement en place.",
       "items": {
-        "type": "object", "additionalProperties": true,
+        "type": "object",
+        "additionalProperties": true,
         "properties": {
-          "id": { "type": "string", "description": "Identifiant du cron/launchagent." },
-          "schedule": { "type": "string", "description": "Cadence lisible. Ex. « lun. 09:10 »." },
-          "host": { "type": "string", "description": "Où il tourne." }
+          "id": {
+            "type": "string",
+            "description": "Identifiant du cron/launchagent."
+          },
+          "schedule": {
+            "type": "string",
+            "description": "Cadence lisible. Ex. « lun. 09:10 »."
+          },
+          "host": {
+            "type": "string",
+            "description": "Où il tourne."
+          }
         }
       }
     },
     "guardrails": {
-      "type": "array", "description": "Garde-fous : ce que l'agent ne doit jamais faire, ou les barrières humaines (validation avant envoi, dryRun, etc.).",
-      "items": { "type": "string" }
+      "type": "array",
+      "description": "Garde-fous : ce que l'agent ne doit jamais faire, ou les barrières humaines (validation avant envoi, dryRun, etc.).",
+      "items": {
+        "type": "string"
+      }
     },
     "entrypoints": {
-      "type": "object", "description": "Points d'entrée documentaires.",
+      "type": "object",
+      "description": "Points d'entrée documentaires.",
       "additionalProperties": true,
       "properties": {
-        "human": { "type": "string", "description": "Doc/README pour un humain." },
-        "agent": { "type": "string", "description": "Doc/prompt pour une IA qui reprend l'agent." }
+        "human": {
+          "type": "string",
+          "description": "Doc/README pour un humain."
+        },
+        "agent": {
+          "type": "string",
+          "description": "Doc/prompt pour une IA qui reprend l'agent."
+        }
       }
+    },
+    "updated": {
+      "type": "string",
+      "format": "date",
+      "description": "Date de dernière relecture du manifeste (AAAA-MM-JJ). Sans elle, impossible de dire si la fiche décrit encore ce que l agent fait."
     }
   },
   "examples": [
@@ -72,12 +160,45 @@
       "owner": "moi",
       "summary": "Synchronise la Search Console et signale les opportunités le lundi.",
       "status": "actif",
-      "skills": [{ "name": "sync GSC", "effect": "met à jour les positions" }, { "name": "détecter opportunités", "effect": "liste les pages à retravailler" }],
-      "connects_to": [{ "type": "service", "name": "Google Search Console", "ref": "compte: mon-site" }, { "type": "host", "name": "mon-vps" }],
-      "data_stores": { "backend": "sqlite" },
-      "crons_live": [{ "id": "com.moi.veille-seo", "schedule": "lun. 09:10", "host": "mon-vps" }],
-      "guardrails": ["ne publie jamais sans validation humaine", "aucune écriture de prix/stock"],
-      "entrypoints": { "human": "README.md", "agent": "AGENT.md" }
+      "skills": [
+        {
+          "name": "sync GSC",
+          "effect": "met à jour les positions"
+        },
+        {
+          "name": "détecter opportunités",
+          "effect": "liste les pages à retravailler"
+        }
+      ],
+      "connects_to": [
+        {
+          "type": "service",
+          "name": "Google Search Console",
+          "ref": "compte: mon-site"
+        },
+        {
+          "type": "host",
+          "name": "mon-vps"
+        }
+      ],
+      "data_stores": {
+        "backend": "sqlite"
+      },
+      "crons_live": [
+        {
+          "id": "com.moi.veille-seo",
+          "schedule": "lun. 09:10",
+          "host": "mon-vps"
+        }
+      ],
+      "guardrails": [
+        "ne publie jamais sans validation humaine",
+        "aucune écriture de prix/stock"
+      ],
+      "entrypoints": {
+        "human": "README.md",
+        "agent": "AGENT.md"
+      }
     }
   ]
 }

@@ -79,6 +79,30 @@ const gitRemote = dir => {
     return m ? { repo: m[1], top } : null;
   } catch { return null; }
 };
+/* --- F2 : le garde-fou d'A1 devient RÉSIDENT, au lieu de vivre sur le stdout de backup.sh.
+ * A1 a posé un contrôle qui signale les dépôts porteurs de skills modifiés et non poussés. Il
+ * fonctionne — il a détecté de la dérive réelle dès son premier passage — mais il ne parle que
+ * pendant la sauvegarde, dans un terminal que personne ne relit. Un skill modifié et jamais
+ * poussé est pourtant une perte en attente : la sauvegarde copie un contenu que le dépôt
+ * d'origine ne porte pas encore. On MESURE donc l'état du dépôt, une fois par `top` (mémoïsé :
+ * 38 skills se partagent 7 dépôts), et karto le porte comme une donnée. */
+const _sante = new Map();
+const gitSante = top => {
+  if (_sante.has(top)) return _sante.get(top);
+  const g = (...a) => { try { return execFileSync('git', ['-C', top, ...a], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { return null; } };
+  const porcelain = g('status', '--porcelain');
+  // `git rev-list @{u}..HEAD` échoue s'il n'y a PAS d'amont : c'est un fait distinct de « 0 commit
+  // en attente » — une branche sans amont ne sera poussée nulle part. On les distingue (null vs 0).
+  const ahead = g('rev-list', '--count', '@{u}..HEAD');
+  const s = {
+    branche: g('rev-parse', '--abbrev-ref', 'HEAD'),
+    modifies: porcelain == null ? null : (porcelain ? porcelain.split('\n').length : 0),
+    nonPousses: ahead == null ? null : Number(ahead),
+    sansAmont: ahead == null,
+  };
+  _sante.set(top, s);
+  return s;
+};
 const BACKUP_REPOS = (cfg.skills?.backupRepos || []).map(p => p.replace(/^~/, HOME));
 
 const skills = [];
@@ -103,6 +127,8 @@ if (existsSync(SKILLS_DIR)) {
     skills.push({
       name: fm.name || name, summary, trigger, path: `~/.claude/skills/${name}`,
       repo: vcs?.repo || null, repoVia: via,
+      lien: realpathSync(dir) !== dir,      // 7 skills sont des liens vers un autre dépôt (A1)
+      git: vcs?.top ? gitSante(vcs.top) : null,
       refs,
     });
   }
@@ -118,3 +144,5 @@ const nRefs = skills.filter(s => s.refs.paths.length + s.refs.repos.length + s.r
 const sansRepo = skills.filter(s => !s.repo).map(s => s.name);
 console.log(`✓ ${skills.length} skills → data/skills_inventory.json  (${nRefs} avec ≥1 référence citée · ${skills.length - sansRepo.length} versionnés)`);
 if (sansRepo.length) console.warn(`  ⚠ ${sansRepo.length} skill(s) dans AUCUN dépôt git (principe A1) : ${sansRepo.join(', ')}`);
+const derive = [...new Set(skills.filter(s => s.git && (s.git.modifies || s.git.nonPousses || s.git.sansAmont)).map(s => `${s.repo} (${[s.git.modifies ? `${s.git.modifies} fichier(s) modifié(s)` : null, s.git.sansAmont ? 'branche sans amont' : (s.git.nonPousses ? `${s.git.nonPousses} commit(s) non poussé(s)` : null)].filter(Boolean).join(', ')})`))];
+if (derive.length) console.warn(`  ⚠ ${derive.length} dépôt(s) porteur(s) de skills en dérive (principe A1) : ${derive.join(' · ')}`);

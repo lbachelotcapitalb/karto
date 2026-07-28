@@ -118,6 +118,19 @@ db.exec(`
     cadence_days INTEGER, status TEXT, last_synced TEXT, howto TEXT, note TEXT,
     ${CHECKS.sourceStatus}
   );
+  /* E1 — Action Types : la règle d'autorisation devient une DONNÉE requêtable, au lieu
+     d'être recodée en 4 motifs différents dans 4 serveurs. Elle est APPLIQUÉE par le hook
+     ~/.claude/hooks/mcp-guard.py, qui lit data/action_types.json ; cette table est là pour
+     qu'on puisse l'interroger comme le reste de la carte (« qui a le droit d'écrire une
+     compta ? » doit être une requête, pas une lecture de quatre dépôts). */
+  CREATE TABLE action_type (
+    id TEXT PRIMARY KEY,
+    kind TEXT, action TEXT,
+    outils TEXT,               -- JSON : motifs de noms d'outils MCP
+    preconditions TEXT,        -- JSON : [{regle, verifiable, dit}]
+    effet TEXT,
+    agents_autorises TEXT      -- JSON : [] = boucle principale uniquement
+  );
 `);
 
 const ents = new Map();   // id -> entity
@@ -237,6 +250,10 @@ function sniffRunner(prose) {
 }
 // résout une référence "par nom" vers un id d'entité existant (sinon renvoie tel quel)
 const ref = name => byCanon.get(canon(name)) || null;
+// Résout un nom en exigeant un KIND. `ref()` rend le premier homonyme enregistré : dès que
+// deux entités partagent un nom, c'est un tirage au sort (défaut corrigé en D2/D3 sur les
+// arêtes, ici sur les connexions d'agents). Rien trouvé = null, on ne dégrade pas tout seul.
+const resolveParKind = (name, kind) => (byCanonAll.get(canon(name)) || []).find(i => ents.get(i)?.kind === kind) || null;
 
 /* ============ disk_inventory ============ */
 const disk = load('disk_inventory.json') || {};
@@ -534,8 +551,13 @@ if (mi) {
     const srv = typeof m === 'string' ? { name: m } : m;
     const k = slug(srv.name);
     const hit = [...ents.values()].find(e => e.kind === 'connector' && (e.canonical === canon(srv.name) || ('-' + slug(e.name) + '-').includes('-' + k + '-')));
-    if (hit) fill(hit.attrs, { local: { transport: srv.transport, scope: srv.scope, origin: srv.origin } }, 'machine_inventory.json', 'attrs.', hit.id);
-    else { const id = E('connector:' + k, 'connector', srv.name, { source: 'machine_inventory.json', statut: 'Actif', attrs: { transport: srv.transport, scope: srv.scope, origin: srv.origin, autoDiscovered: true } }); L(ref('Claude') || 'account:anthropic', id, 'utilise', 'machine_inventory.json'); }
+    // F2 — on GARDE la clé du serveur telle qu'elle est écrite dans la config du client MCP.
+    // Elle était calculée ici puis jetée : le connecteur portait ensuite un nom (« karto MCP »)
+    // que rien ne rattachait au serveur « karto ». C'est le motif de D4 — un annuaire qui jette
+    // la référence qu'il avait sous la main — et c'est ce qui empêchait de confronter la fiche
+    // au handshake. Joindre sur cet identifiant est un fait ; joindre sur le nom, une supposition.
+    if (hit) fill(hit.attrs, { mcpServer: srv.name, local: { transport: srv.transport, scope: srv.scope, origin: srv.origin } }, 'machine_inventory.json', 'attrs.', hit.id);
+    else { const id = E('connector:' + k, 'connector', srv.name, { source: 'machine_inventory.json', statut: 'Actif', attrs: { mcpServer: srv.name, transport: srv.transport, scope: srv.scope, origin: srv.origin, autoDiscovered: true } }); L(ref('Claude') || 'account:anthropic', id, 'utilise', 'machine_inventory.json'); }
   }
   // enrichit les projets locaux (dirty, lastCommit, hasRemote) si match par nom
   for (const p of (mi.projects || [])) { const pid = ref(p.name); if (pid && ents.has(pid)) fill(ents.get(pid).attrs, { local: { lastCommit: p.lastCommit, dirtyFiles: p.dirtyFiles, hasRemote: p.hasRemote, branch: p.branch } }, 'machine_inventory.json', 'attrs.', pid); else E('project:' + slug(p.name), 'project', p.name, { path: p.path, source: 'machine_inventory.json', attrs: { stack: p.stack, branch: p.branch, lastCommit: p.lastCommit, hasRemote: p.hasRemote, gitRemotes: p.remotes, autoDiscovered: true } }); }
@@ -614,20 +636,39 @@ for (const s of (sk.skills || [])) {
 const ag = load('agents.json') || {};
 for (const a of (ag.agents || [])) {
   const id = E('agent:' + slug(a.id), 'agent', a.name, {
-    statut: a.status === 'actif' ? 'Actif' : (a.status === 'dormant' ? 'En pause' : (a.status || null)),
+    // D8 — plus de table de correspondance ici : `actif`, `dormant` et `arrêté` sont TOUS
+    // déjà dans `normalise` de data/karto_vocabulary.json. Ce ternaire était une seconde
+    // vérité, exactement ce que D1 avait pour but de supprimer — et il laissait passer
+    // `arrêté` tel quel, qui n'était rattrapé qu'en aval, par chance.
+    statut: a.status || null,
     source: 'agents.json', owner, doc: a.summary,
     attrs: {
       summary: a.summary, origin: a.source, manifest: a.manifest || null,
+      // D8 — le manifeste porte sa VERSION de format et sa DATE : sans elles, impossible de
+      // dire si la fiche d'un agent décrit encore ce qu'il fait. Le collecteur les jetait.
+      schema: a.schema || null, updated: a.updated || null,
       host: a.host, capabilities: a.capabilities, connects_to: a.connects_to,
       actions: a.actions, chains: a.chains, guardrails: a.guardrails
     }
   });
   // agent -> projet porteur
   if (a.project) { const pid = ref(a.project); if (pid) L(id, pid, 'porté par', 'agents.json'); }
-  // agent -> ce à quoi il se connecte (datastore/mcp/api/… résolus par nom quand c'est possible)
+  // agent -> ce à quoi il se connecte (datastore/mcp/api/… résolus par nom quand c'est possible).
+  // Le TYPE de connexion dit quel KIND on attend : `ref(name)` seul prend le premier homonyme
+  // venu, ce qui est un tirage au sort dès que deux entités partagent un nom. Constaté au
+  // renommage myapp → moncompta : `project:moncompta` et `connector:moncompta` sont devenus
+  // homonymes, et le lien `se connecte·mcp` de l'agent est parti sur le PROJET au lieu du
+  // serveur MCP — silencieusement. Même règle qu'en D2/D3 : on choisit par kind, et on ne
+  // dégrade sur le premier venu qu'à défaut.
+  const KIND_ATTENDU = {
+    mcp: ['connector'], datastore: ['database', 'bridge'], host: ['host'],
+    repo: ['repo'], runtime: ['cli'], channel: ['account', 'workload'],
+    api: ['account', 'workload', 'project'], service: ['account', 'project', 'workload'],
+  };
   for (const c of (a.connects_to || [])) {
     let tid = null;
     if (c.ref) { if (ents.has('database:' + c.ref)) tid = 'database:' + c.ref; else if (ents.has(c.ref)) tid = c.ref; }
+    if (!tid) for (const k of (KIND_ATTENDU[c.type] || [])) { const hit = resolveParKind(c.name, k); if (hit) { tid = hit; break; } }
     if (!tid) tid = ref(c.name) || (c.ref ? ref(c.ref) : null);
     if (tid) L(id, tid, 'se connecte·' + (c.type || ''), 'agents.json');
   }
@@ -651,6 +692,19 @@ const srcReg = load('sources.json') || {};
 for (const s of (srcReg.sources || [])) {
   db.prepare('INSERT OR REPLACE INTO source(id,name,method,collector,requires,cadence_days,status,last_synced,howto,note) VALUES(?,?,?,?,?,?,?,?,?,?)')
     .run(s.id, s.name || null, s.method || null, s.collector || null, s.requires || null, s.cadence_days ?? null, normSourceStatus(s.status, 'sources.json'), s.last_synced || null, s.howto || null, s.note || null);
+}
+
+/* ============ E1 — action_types (la règle d'autorisation, comme donnée) ============ */
+const actReg = load('action_types.json') || {};
+const actAgents = new Set((actReg.agents || []).map(a => a.id));
+const actInconnus = [];
+for (const a of (actReg.actions || [])) {
+  // Un agent autorisé qui n'existe pas dans le registre est une autorisation qui ne mordra
+  // sur rien — on le NOMME au build plutôt que de le laisser rassurer à tort (leçon B5).
+  for (const ag of (a.agents_autorises || [])) if (!actAgents.has(ag)) actInconnus.push(`${a.id} → « ${ag} »`);
+  db.prepare('INSERT OR REPLACE INTO action_type(id,kind,action,outils,preconditions,effet,agents_autorises) VALUES(?,?,?,?,?,?,?)')
+    .run(a.id, a.kind || null, a.action || null, JSON.stringify(a.outils || []),
+         JSON.stringify(a.preconditions || []), a.effet || null, JSON.stringify(a.agents_autorises || []));
 }
 
 /* ============ runs (dernier passage des automatisations — data/runs_summary.json) ============ */
@@ -1047,6 +1101,40 @@ const siteEnts = db.prepare("SELECT id, json_extract(attrs,'$.token') t FROM ent
 const siteLiensEcrits = db.prepare("SELECT COUNT(*) n FROM edge WHERE source='sites.json'").get().n;
 console.log(`  dimension SITE : ${siteEnts.length} site(s) · ${siteLiensEcrits}/${sitesLiens} lien(s) déclaré(s) résolu(s) · tokens ${siteEnts.map(s => s.t).join(', ') || '—'}`);
 if (sitesRefsSansSuite.length) console.warn(`  ⚠ déclaration de site à corriger : ${sitesRefsSansSuite.join(' · ')}`);
+
+/* ---------- F2 : les invariants du build DEVIENNENT une donnée de la base ----------
+ * Tout ce qui précède était imprimé sur stdout, une fois, puis perdu. Or ce sont exactement
+ * les défauts que personne ne revoit : une référence déclarée qui ne résout pas, un écrasement
+ * refusé, une entrée de liste blanche morte. Un audit qui ne tourne que quand on y pense ne
+ * protège de rien — `karto_diagnostics` doit pouvoir les REMONTER, à la demande, longtemps après.
+ *
+ * Pourquoi les PERSISTER plutôt que les recalculer dans le diagnostic : ce sont des faits sur ce
+ * qui n'a PAS été écrit. Une arête refusée parce qu'une extrémité n'existe pas n'est, par
+ * construction, dans aucune table — la base ne peut pas la montrer, seul le build l'a vue.
+ * (Ce qui EST dans la base — pendantes, doublons, vocabulaire — reste mesuré en direct par le
+ * diagnostic : deux vérités calculées séparément divergent au premier renommage.) */
+const invariants = {
+  builtAt: new Date().toISOString(),
+  refsNonResolues: [...unresolvedRefs],
+  projetsNonResolus: [...unresolvedProjects],
+  dependancesNonResolues: unresolvedDeps,
+  integrationsNonResolues: [...unresolvedInts],
+  skillsRefsSansSuite: [...skillsRefsSansSuite],
+  skillsRefsAmbigues: [...skillsRefsAmbigues],
+  pontsSansCompte: unresolvedBridgeRefs,
+  ghaSansDepot: [...unresolvedGhaRepos],
+  aliasSshOrphelins: orphanSshAliases,
+  ecrasementsRefuses,
+  curations,
+  vocabulaireInconnu: inconnues,
+  aretesDoublonExact: doublons.length,
+  aretesMiroirEcartees: miroirs.length,
+  aretesPendantesEcartees: pendantes,
+  site: { declares: sitesLiens, resolus: siteLiensEcrits, aCorriger: sitesRefsSansSuite },
+  siren: { porteurs: sirens.length, malformes: sirensMalformes, doublons: sirenDup.map(([s, ids]) => `${s} → ${ids.join(', ')}`) },
+};
+db.prepare('INSERT OR REPLACE INTO meta(key,value) VALUES(?,?)').run('invariants', JSON.stringify(invariants));
+db.flush();
 
 /* ---------- snapshot & DÉTECTION DE DÉRIVE (nouveautés depuis le dernier build) ---------- */
 const snapPath = join(__dir, 'data', '.karto-snapshot.json');
