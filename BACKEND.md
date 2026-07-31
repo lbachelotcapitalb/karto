@@ -33,12 +33,13 @@ pas de `npm install`. Cohérent avec le reste de karto.
 | `node karto-db.mjs build` | (Re)construit `karto.db` depuis tous les `data/*.json` + `bridges.json`. |
 | `node karto-query.mjs …` | **L'interface IA.** Voir ci-dessous. |
 | `node vps-collect.mjs` | Scanne le **VPS** en SSH lecture seule (crontabs, systemd, /opt, home, sites Caddy, journal veille) → `data/vps_inventory.json`. Tokens caviardés. Kind `vps_cron` + enrichissement `host:hetzner` + workloads autoDiscovered. Softcode `karto.config.json > vps`. |
-| `node runs-collect.mjs` | Dernier run réel de chaque workflow GitHub Actions (`gh api`) → `runs_summary.json` → `attrs.lastRun`. |
+| `node runs-collect.mjs` | Dernier run réel des **trois** canaux → `runs_summary.json` → `attrs.lastRun` : workflows GitHub Actions (`gh api`), agents launchd du Mac (`launchctl list`), crons VPS à redirection exploitable. Sur launchd, **un PID vivant tranche avant le code de sortie** : `launchctl` expose aussi le `LastExitStatus` de l'instance précédente, et le tester d'abord déclarait « en échec » tout démon relancé par KeepAlive (com.ton-user.omnimac, 28/07/2026). |
+| `node claude-usage.mjs` | **Usage Claude Code par agent** (Mac + VPS en SSH) → `data/claude_usage.json` : sessions, tokens in/out/cache, modèles, dernier passage. Lit les transcripts que Claude Code écrit **déjà** dans `~/.claude/projects` — aucun daemon, aucun exporter, rien à instrumenter. Complète `cloud.costs` (`cost_measure.mjs` sur le VPS), qui ne voit que le VPS. Sur abonnement Max, les tokens sont une **part d'usage, pas un prix** : aucun tarif n'est appliqué. Classé `out` au manifeste (rapport à la demande, pas de vue front). |
 | `node clouds-probe.mjs` | Sonde l'existence des clouds incertains (Vercel/Netlify/Railway) via CLI → statut dans `data/sources.json`. |
 | `node browser-collect.mjs` | **Candidats de connexion** minés dans l'historique navigateur (Chrome/Safari/…) : domaines AGRÉGÉS croisés avec le catalogue SaaS — jamais d'URL/titre/recherche, navigation personnelle ignorée. Sortie **locale gitignorée** (`browser_candidates.local.json`) exposée par `karto_discover.candidates` ; verdicts d'existence (Railway…) reversés dans sources.json. Un candidat n'entre dans la carte qu'après validation de Owner. |
 | `node karto-ingest.mjs <source> '<json>'` | **Ingestion en masse par source** (make, supabase, cloudflare, gdrive, hetzner-workloads, mcp-tools, runs, hostinger-domains, source-status). Merge idempotent, garde anti-secret, webhooks caviardés. Aussi en MCP : `karto_ingest` (écriture opt-in). `list` = moules. |
 | `node karto-sources.mjs` | État de fraîcheur du répertoire des sources. |
-| `node karto-index.mjs` | Pipeline complet : collect (Mac+VPS+runs) → bridge gen → probe → db build. |
+| `node karto-index.mjs` | Pipeline complet : collect (Mac+VPS+runs+usage Claude) → bridge gen → probe → db build. |
 
 `karto.db` est un **artefact régénérable** (gitignoré, comme `index.html`). On le reconstruit, on ne le versionne pas.
 

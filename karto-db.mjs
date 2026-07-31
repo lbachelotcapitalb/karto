@@ -359,7 +359,7 @@ for (const r of (cgh.repos || [])) {
 // D4 — un workflow GitHub Actions est du CODE qui vit dans un dépôt, et `g.repo` le nomme
 // depuis toujours : 13 automatisations orphelines pour une référence non écrite. Le champ
 // porte le nom COURT (« monapp ») là où l'entité dépôt porte le chemin complet
-// (« lbachelotcapitalb/monapp ») : on apparie sur le dernier segment, à l'identique, et on
+// (« YOUR-ORG/monapp ») : on apparie sur le dernier segment, à l'identique, et on
 // SIGNALE au lieu de choisir si deux propriétaires ont un dépôt du même nom.
 for (const g of (cgh.actions || [])) {
   const id = E('automation:gha-' + slug(g.repo + '-' + g.workflow), 'automation', `GHA ${g.repo} · ${g.workflow}`, { vendor: 'GitHub', statut: g.status === 'active' ? 'Actif' : 'En pause', source: 'cloud_inventory.json', attrs: { trigger: g.trigger, does: g.does, claudeTier: g.claudeTier, obs: g.obs, chain: g.chain, repo: g.repo, runner: 'gha' } });

@@ -1,6 +1,6 @@
 # install.ps1 — installeur karto « une commande » (Windows).
 #
-#   irm https://raw.githubusercontent.com/lbachelotcapitalb/karto/main/install.ps1 | iex
+#   irm https://raw.githubusercontent.com/YOUR-ORG/karto/main/install.ps1 | iex
 #
 # Récupère karto, garantit un Node >= 20 (en installe un PRIVÉ dans %USERPROFILE%\.karto si absent,
 # sans droits admin), puis lance la première configuration (karto-init.mjs). Tout reste local.
@@ -11,7 +11,7 @@ $KartoHome   = if ($env:KARTO_HOME) { $env:KARTO_HOME } else { Join-Path $HOME '
 $App         = Join-Path $KartoHome 'app'
 $Rt          = Join-Path $KartoHome 'runtime'
 $NodeVersion = if ($env:KARTO_NODE_VERSION) { $env:KARTO_NODE_VERSION } else { '22.11.0' }
-$DistUrl     = if ($env:KARTO_DIST_URL) { $env:KARTO_DIST_URL } else { 'https://github.com/lbachelotcapitalb/karto/archive/refs/heads/main.zip' }
+$DistUrl     = if ($env:KARTO_DIST_URL) { $env:KARTO_DIST_URL } else { 'https://github.com/YOUR-ORG/karto/archive/refs/heads/main.zip' }
 
 function Say($m) { Write-Host "  $m" }
 function Have($c) { $null -ne (Get-Command $c -ErrorAction SilentlyContinue) }

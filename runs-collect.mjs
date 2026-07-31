@@ -126,9 +126,16 @@ function collectLaunchd() {
         status = 'fail';
         note = 'plist présent mais launchd ne connaît pas le service (« Could not find service ») — la carte le déclare actif et il ne tourne pas';
       }
+    } else if (info.pid != null) {
+      // Un PID vivant tranche : le service TOURNE, maintenant. `launchctl list` expose en même
+      // temps le LastExitStatus de l'instance PRÉCÉDENTE — pour un démon relancé (KeepAlive), ce
+      // code est de l'histoire, pas une panne. Le tester avant le PID faisait déclarer « en
+      // ÉCHEC » deux services en cours d'exécution (com.ton-user.omnimac et son tunnel, LastExitStatus
+      // =-15 = le SIGTERM de la relance). Le PID passe donc AVANT le code de sortie.
+      status = 'ok';
+      note = `en cours (PID ${info.pid})` + (info.exit ? ` — instance précédente sortie en ${info.exit}` : '');
     } else if (info.exit == null) {
-      if (info.pid != null) { status = 'ok'; note = `en cours (PID ${info.pid})`; }
-      else { status = 'stale'; note = 'chargé mais aucun passage enregistré depuis le dernier démarrage'; }
+      status = 'stale'; note = 'chargé mais aucun passage enregistré depuis le dernier démarrage';
     } else if (info.exit === 0) {
       status = 'ok'; note = 'LastExitStatus=0';
     } else {

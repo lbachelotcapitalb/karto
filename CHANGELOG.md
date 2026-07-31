@@ -12,6 +12,10 @@ Règle de bump (liée au **risque pour le coffre de l'utilisateur**, pas à la t
 
 ---
 
+## 1.4.0 — 2026-07-31 (minor)
+
+- Collecteur claude-usage (usage Claude Code par agent, Mac + VPS) et correctif runs-collect : un PID vivant prime sur le code de sortie de l'instance précédente
+
 ## 1.3.0 — 2026-07-28 (minor)
 
 - Front softcode (lot G) : manifeste de payload + descripteur de vues, 4 primitives de rendu, detail des constats de sante, declare vs mesure sur les contrats MCP, couche d'execution reelle, fiches fournisseur generiques, garde front-audit

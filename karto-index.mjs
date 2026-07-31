@@ -23,6 +23,10 @@ run('agents-collect.mjs');
 soft('vps-collect.mjs');        // SSH : tolère un VPS injoignable
 soft('runs-collect.mjs');       // gh api : tolère un gh non authentifié
 soft('browser-collect.mjs');    // historique navigateur → candidats (local, gitignoré)
+// Usage Claude par agent, lu dans les transcripts déjà sur disque (Mac + VPS via ssh). `soft` :
+// le VPS injoignable dégrade en « Mac seulement » sans casser le pipeline. ~15 s, hebdomadaire —
+// aucune charge quotidienne, aucun daemon : la donnée est écrite par Claude Code, pas par nous.
+soft('claude-usage.mjs');
 // F2 — le contrat des serveurs MCP se MESURE avec les autres sources, sinon la fiche de la
 // carte n'est jamais démentie. `soft` : un serveur injoignable ne doit pas casser le pipeline,
 // il sort « non mesuré » avec son motif (et le diagnostic le dit au lieu de compter 0 outil).

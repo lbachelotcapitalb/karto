@@ -27,7 +27,7 @@ automatiquement sur le binaire `sqlite3` (présent d'origine sur macOS ; sinon `
 / `apt install sqlite3`). Aucune autre installation.
 
 ```bash
-git clone https://github.com/lbachelotcapitalb/karto.git
+git clone https://github.com/YOUR-ORG/karto.git
 cd karto
 node karto-db.mjs build        # construit la base de connaissances karto.db depuis data/*.json
 node karto-query.mjs schema    # COMMENCE ICI : structure + KINDS + relations + exemples
@@ -85,7 +85,7 @@ Docs de référence : [`AGENTS.md`](AGENTS.md) (point d'entrée IA) · [`BACKEND
 Resynchronise souvent pour éviter la dérive — plus ta branche vieillit, plus le merge fait mal :
 
 ```bash
-git remote add upstream https://github.com/lbachelotcapitalb/karto.git   # une seule fois
+git remote add upstream https://github.com/YOUR-ORG/karto.git   # une seule fois
 git fetch upstream && git rebase upstream/main
 ```
 

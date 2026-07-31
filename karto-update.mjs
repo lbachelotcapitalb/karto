@@ -107,7 +107,7 @@ async function main() {
 
   const ts = new Date().toISOString().replace(/[:.]/g, '-');
   const tmp = join(tmpdir(), 'karto-update-' + ts);
-  const distUrl = process.env.KARTO_DIST_URL || (UPD.distUrl) || 'https://github.com/lbachelotcapitalb/karto/archive/refs/heads/main.tar.gz';
+  const distUrl = process.env.KARTO_DIST_URL || (UPD.distUrl) || 'https://github.com/YOUR-ORG/karto/archive/refs/heads/main.tar.gz';
   try {
     // Backup du coffre + clé + config AVANT toute écriture.
     const backup = join(__dir, '.backups', 'update-' + ts);

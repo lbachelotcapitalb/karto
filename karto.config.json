@@ -30,8 +30,8 @@
   "updates": {
     "_doc": "Notification de mise à jour pour les instances auto-hébergées. manifestUrl = UPSTREAM interrogé pour savoir si une MAJ existe (ICI : le VPS de Owner, publié par deploy-onepager.sh ; publier ce fichier = ce qui DÉCLENCHE la notif, d'où le rollout piloté). Le check est un simple GET (aucune donnée ne sort) ; check:false le désactive partout (bandeau in-app ET avis MCP). build.mjs bake ce bloc dans model.meta.updates (lu par le bandeau). ATTENTION : make-public RÉÉCRIT ce bloc dans la projection publique vers le GitHub raw du dépôt public — l'URL privée ci-dessous est un jeton SENSITIVE (fuite) et imposerait du CORS sur ce VPS. Un forkeur suit donc SON upstream GitHub.",
     "check": true,
-    "manifestUrl": "https://raw.githubusercontent.com/lbachelotcapitalb/karto/main/version.json",
-    "changelogUrl": "https://github.com/lbachelotcapitalb/karto/blob/main/CHANGELOG.md",
+    "manifestUrl": "https://raw.githubusercontent.com/YOUR-ORG/karto/main/version.json",
+    "changelogUrl": "https://github.com/YOUR-ORG/karto/blob/main/CHANGELOG.md",
     "intervalHours": 24
   },
   "vps": {
@@ -176,5 +176,14 @@
       "name": "Safari",
       "app": "/Applications/Safari.app"
     }
-  ]
+  ],
+  "claudeUsage": {
+    "_doc": "Regroupement des répertoires de travail Claude Code (slugs de ~/.claude/projects) en agents métier, pour claude-usage.mjs. NOMINATIF par nature : make-public le vide dans la projection publique. Un slug qui ne matche rien reste affiché sous son propre nom.",
+    "groups": [
+      {
+        "match": "mon-projet|mon-projet-fork",
+        "label": "Mon agent"
+      }
+    ]
+  }
 }

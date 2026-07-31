@@ -106,29 +106,29 @@ utilisateur — un Node privé est posé dans `~/.karto` si besoin, **sans sudo*
 
 ```bash
 # macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/lbachelotcapitalb/karto/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/YOUR-ORG/karto/main/install.sh | bash
 ```
 
 ```powershell
 # Windows (PowerShell)
-irm https://raw.githubusercontent.com/lbachelotcapitalb/karto/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/YOUR-ORG/karto/main/install.ps1 | iex
 ```
 
 **Ou avec git** (pour explorer / contribuer) :
 
 ```bash
-git clone https://github.com/lbachelotcapitalb/karto.git
+git clone https://github.com/YOUR-ORG/karto.git
 cd karto
 node karto-init.mjs        # choisit une passphrase, construit le coffre chiffré, l'ouvre
 ```
 
 **Ou demande à ton IA.** Colle ce prompt à Claude (ou ton assistant) :
 
-> Installe karto (https://github.com/lbachelotcapitalb/karto) sur ma machine : clone le dépôt,
+> Installe karto (https://github.com/YOUR-ORG/karto) sur ma machine : clone le dépôt,
 > lance `node karto-init.mjs` pour créer ma carte chiffrée, puis aide-moi à la remplir.
 
 **Ou télécharge et installe à la main** :
-[karto (.tar.gz)](https://github.com/lbachelotcapitalb/karto/archive/refs/heads/main.tar.gz) →
+[karto (.tar.gz)](https://github.com/YOUR-ORG/karto/archive/refs/heads/main.tar.gz) →
 décompresse → `node karto-init.mjs`.
 
 Ensuite :

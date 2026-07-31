@@ -183,7 +183,7 @@ Ne JAMAIS écrire de valeur de secret en clair dans les `data/*.json` (seulement
 ne vivent que chiffrées dans `index.html` (cf. `build.mjs --with-secrets`, lues en RAM depuis les `.env`).
 
 ## Sauvegarde cloud
-- **GitHub privé `lbachelotcapitalb/karto`** = foyer principal versionné. Pousser manuellement après changement :
+- **GitHub privé `YOUR-ORG/karto`** = foyer principal versionné. Pousser manuellement après changement :
   `git add -A && git commit -m "sync karto" && git push`. `index.html` est gitignored (jamais poussé).
 - **iCloud** : `~/Desktop` est synchronisé → le dossier (dont `index.html` chiffré) est mirroré passivement.
 - Restauration : `git clone` du repo → `node build.mjs --passphrase "…" --with-secrets` (les valeurs viennent des

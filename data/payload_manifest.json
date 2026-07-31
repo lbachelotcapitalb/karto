@@ -31,35 +31,151 @@
       "label": "Sites / propriétés web",
       "collector": "édition manuelle"
     },
-
-    { "file": "disk_inventory.json", "mode": "builtin", "why": "projets, expositions, automatisations, secrets — éclaté dans le modèle" },
-    { "file": "cloud_inventory.json", "mode": "builtin", "why": "comptes, bases, domaines, connecteurs, fournisseurs — éclaté dans le modèle" },
-    { "file": "ea_inventory.json", "mode": "builtin", "why": "actifs + capacités EA (source de vérité de l'inventaire)" },
-    { "file": "machine_inventory.json", "mode": "builtin", "why": "runtimes, CLIs, launchd, bases locales (vue Base de connaissances)" },
-    { "file": "vps_inventory.json", "mode": "builtin", "why": "coûts agentiques ; crons/services/timers passent par karto.db (lot G4), pas par un second chemin" },
-    { "file": "bridges.json", "mode": "builtin", "why": "registre des bases connectées" },
-    { "file": "dependencies.json", "mode": "builtin", "why": "rayon d'impact par hub" },
-    { "file": "agents.json", "mode": "builtin", "why": "registre d'agents (cartes + badges de gouvernance)" },
-    { "file": "skills_inventory.json", "mode": "builtin", "why": "inventaire des skills" },
-    { "file": "skills_taxonomy.json", "mode": "builtin", "why": "taxonomie pédagogique des skills" },
-    { "file": "runs_summary.json", "mode": "builtin", "why": "dernier run réel rattaché aux automatisations" },
-    { "file": "gouvernance_agentique.json", "mode": "builtin", "why": "paliers × risques, via gouvernance.mjs" },
-    { "file": "scenarios.json", "mode": "builtin", "why": "scénarios what-if, via karto-scenarios.mjs" },
-    { "file": "business_units.json", "mode": "builtin", "why": "lu depuis karto.db (kind business_unit) pour garder les rattachements" },
-    { "file": "data_assets.json", "mode": "builtin", "why": "données stratégiques + canaux de restauration" },
-    { "file": "collaboration.json", "mode": "builtin", "why": "ouverture des dépôts et collaborateurs" },
-    { "file": "app_catalog.json", "mode": "builtin", "why": "catalogue d'applications (résolution d'intégrations + icônes)" },
-    { "file": "architecture.json", "mode": "builtin", "why": "layout curé du diagramme d'architecture" },
-    { "file": "automation_plain.json", "mode": "builtin", "why": "résumé « en clair » attaché par nom d'automatisation" },
-    { "file": "automation_taxonomy.json", "mode": "builtin", "why": "taxonomie des automatisations" },
-    { "file": "brand_icons.json", "mode": "builtin", "why": "icônes de marque" },
-    { "file": "sync_log.json", "mode": "builtin", "why": "date du dernier sync (onglet Système)" },
-    { "file": "vault_connection.json", "mode": "builtin", "why": "état du coffre connecté" },
-    { "file": "account_registry.local.json", "mode": "builtin", "why": "annuaire de comptes (local, gitignoré, sans mot de passe)" },
-    { "file": "karto_vocabulary.json", "mode": "builtin", "why": "vocabulaire fermé — consommé par karto-vocab/db, reflété dans la vue Modèle de données" },
-    { "file": "account_taxonomy.json", "mode": "builtin", "why": "taxonomie de comptes — consommée par vault-connect/bw-to-karto en amont du payload" },
-
-    { "file": "browser_candidates.local.json", "mode": "out", "why": "file d'attente de triage (comptes vus au navigateur), pas un état du SI — exposée via le MCP, pas à l'écran" },
-    { "file": "browser_ignore.json", "mode": "out", "why": "liste d'exclusion du collecteur navigateur — réglage de collecte, pas de la donnée cartographiée" }
+    {
+      "file": "disk_inventory.json",
+      "mode": "builtin",
+      "why": "projets, expositions, automatisations, secrets — éclaté dans le modèle"
+    },
+    {
+      "file": "cloud_inventory.json",
+      "mode": "builtin",
+      "why": "comptes, bases, domaines, connecteurs, fournisseurs — éclaté dans le modèle"
+    },
+    {
+      "file": "ea_inventory.json",
+      "mode": "builtin",
+      "why": "actifs + capacités EA (source de vérité de l'inventaire)"
+    },
+    {
+      "file": "machine_inventory.json",
+      "mode": "builtin",
+      "why": "runtimes, CLIs, launchd, bases locales (vue Base de connaissances)"
+    },
+    {
+      "file": "vps_inventory.json",
+      "mode": "builtin",
+      "why": "coûts agentiques ; crons/services/timers passent par karto.db (lot G4), pas par un second chemin"
+    },
+    {
+      "file": "bridges.json",
+      "mode": "builtin",
+      "why": "registre des bases connectées"
+    },
+    {
+      "file": "dependencies.json",
+      "mode": "builtin",
+      "why": "rayon d'impact par hub"
+    },
+    {
+      "file": "agents.json",
+      "mode": "builtin",
+      "why": "registre d'agents (cartes + badges de gouvernance)"
+    },
+    {
+      "file": "skills_inventory.json",
+      "mode": "builtin",
+      "why": "inventaire des skills"
+    },
+    {
+      "file": "skills_taxonomy.json",
+      "mode": "builtin",
+      "why": "taxonomie pédagogique des skills"
+    },
+    {
+      "file": "runs_summary.json",
+      "mode": "builtin",
+      "why": "dernier run réel rattaché aux automatisations"
+    },
+    {
+      "file": "gouvernance_agentique.json",
+      "mode": "builtin",
+      "why": "paliers × risques, via gouvernance.mjs"
+    },
+    {
+      "file": "scenarios.json",
+      "mode": "builtin",
+      "why": "scénarios what-if, via karto-scenarios.mjs"
+    },
+    {
+      "file": "business_units.json",
+      "mode": "builtin",
+      "why": "lu depuis karto.db (kind business_unit) pour garder les rattachements"
+    },
+    {
+      "file": "data_assets.json",
+      "mode": "builtin",
+      "why": "données stratégiques + canaux de restauration"
+    },
+    {
+      "file": "collaboration.json",
+      "mode": "builtin",
+      "why": "ouverture des dépôts et collaborateurs"
+    },
+    {
+      "file": "app_catalog.json",
+      "mode": "builtin",
+      "why": "catalogue d'applications (résolution d'intégrations + icônes)"
+    },
+    {
+      "file": "architecture.json",
+      "mode": "builtin",
+      "why": "layout curé du diagramme d'architecture"
+    },
+    {
+      "file": "automation_plain.json",
+      "mode": "builtin",
+      "why": "résumé « en clair » attaché par nom d'automatisation"
+    },
+    {
+      "file": "automation_taxonomy.json",
+      "mode": "builtin",
+      "why": "taxonomie des automatisations"
+    },
+    {
+      "file": "brand_icons.json",
+      "mode": "builtin",
+      "why": "icônes de marque"
+    },
+    {
+      "file": "sync_log.json",
+      "mode": "builtin",
+      "why": "date du dernier sync (onglet Système)"
+    },
+    {
+      "file": "vault_connection.json",
+      "mode": "builtin",
+      "why": "état du coffre connecté"
+    },
+    {
+      "file": "account_registry.local.json",
+      "mode": "builtin",
+      "why": "annuaire de comptes (local, gitignoré, sans mot de passe)"
+    },
+    {
+      "file": "karto_vocabulary.json",
+      "mode": "builtin",
+      "why": "vocabulaire fermé — consommé par karto-vocab/db, reflété dans la vue Modèle de données"
+    },
+    {
+      "file": "account_taxonomy.json",
+      "mode": "builtin",
+      "why": "taxonomie de comptes — consommée par vault-connect/bw-to-karto en amont du payload"
+    },
+    {
+      "file": "browser_candidates.local.json",
+      "mode": "out",
+      "why": "file d'attente de triage (comptes vus au navigateur), pas un état du SI — exposée via le MCP, pas à l'écran"
+    },
+    {
+      "file": "browser_ignore.json",
+      "mode": "out",
+      "why": "liste d'exclusion du collecteur navigateur — réglage de collecte, pas de la donnée cartographiée"
+    },
+    {
+      "file": "claude_usage.json",
+      "mode": "out",
+      "why": "rapport d'usage à la demande (tokens + dernier passage par agent, Mac + VPS), pas un état du SI à afficher — l'embarquer dans le coffre sans vue en ferait une zone morte. Produit par claude-usage.mjs dans le pipeline hebdo ; lu au fichier. Câbler une vue Coûts est un lot front distinct.",
+      "collector": "node claude-usage.mjs"
+    }
   ]
 }

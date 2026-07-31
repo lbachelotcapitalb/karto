@@ -1,7 +1,7 @@
 #!/bin/bash
 # install.sh — installeur karto « une commande » (Mac/Linux).
 #
-#   curl -fsSL https://raw.githubusercontent.com/lbachelotcapitalb/karto/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/YOUR-ORG/karto/main/install.sh | bash
 #
 # Récupère karto, garantit un Node ≥ 20 (en installe un PRIVÉ dans ~/.karto si absent, SANS sudo),
 # puis lance la première configuration (karto-init.mjs → passphrase → coffre chiffré → ouverture).
@@ -15,7 +15,7 @@ KARTO_HOME="${KARTO_HOME:-$HOME/.karto}"
 APP="$KARTO_HOME/app"
 RT="$KARTO_HOME/runtime"
 NODE_VERSION="${KARTO_NODE_VERSION:-22.11.0}"
-DIST_URL="${KARTO_DIST_URL:-https://github.com/lbachelotcapitalb/karto/archive/refs/heads/main.tar.gz}"
+DIST_URL="${KARTO_DIST_URL:-https://github.com/YOUR-ORG/karto/archive/refs/heads/main.tar.gz}"
 
 say(){ printf '  %s\n' "$*"; }
 die(){ printf '  ✗ %s\n' "$*" >&2; exit 1; }

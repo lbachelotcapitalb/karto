@@ -331,8 +331,8 @@
 <script>
   // La distribution est servie par GitHub (aucun hébergement à monter) : script d'install en RAW,
   // archive versionnée pour le téléchargement manuel. Le slug d'org est ajusté à la projection.
-  var REPO = 'https://github.com/lbachelotcapitalb/karto'; // dépôt public
-  var RAW  = 'https://raw.githubusercontent.com/lbachelotcapitalb/karto/main';
+  var REPO = 'https://github.com/YOUR-ORG/karto'; // dépôt public
+  var RAW  = 'https://raw.githubusercontent.com/YOUR-ORG/karto/main';
   var ARCH = REPO + '/archive/refs/heads/main';
   var CMDS = {
     unix: { html:'<span class="p">$</span> curl -fsSL '+RAW+'/install.sh | bash', raw:'curl -fsSL '+RAW+'/install.sh | bash', dl: ARCH+'.tar.gz' },
@@ -352,7 +352,7 @@
       var c = document.getElementById('copy'); c.textContent = '✓ Copié'; c.classList.add('done');
     });
   }
-  var hostEl = document.getElementById('host'); if(hostEl) hostEl.textContent = 'github.com/lbachelotcapitalb/karto';
+  var hostEl = document.getElementById('host'); if(hostEl) hostEl.textContent = 'github.com/YOUR-ORG/karto';
   var csEl = document.getElementById('csum'); if(csEl) csEl.textContent = ''; // archive GitHub : pas de checksum publié à afficher
   ['repo','repo2','repo3'].forEach(function(id){ var el=document.getElementById(id); if(el) el.setAttribute('href', id==='repo2' ? REPO+'/blob/main/AGENTS.md' : REPO); });
   // détection OS : Windows → onglet Windows, sinon Unix
