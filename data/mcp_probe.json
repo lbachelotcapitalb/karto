@@ -12,36 +12,6 @@
    "sansAnnotation": 0,
    "incoherents": [],
    "outils": []
-  },
-  "whatsapp": {
-   "mesure": "",
-   "transport": "",
-   "total": 0,
-   "readOnly": 0,
-   "mutateurs": 0,
-   "sansAnnotation": 0,
-   "incoherents": [],
-   "outils": []
-  },
-  "moncompta": {
-   "mesure": "",
-   "transport": "",
-   "total": 0,
-   "readOnly": 0,
-   "mutateurs": 0,
-   "sansAnnotation": 0,
-   "incoherents": [],
-   "outils": []
-  },
-  "polar": {
-   "mesure": "",
-   "transport": "",
-   "total": 0,
-   "readOnly": 0,
-   "mutateurs": 0,
-   "sansAnnotation": 0,
-   "incoherents": [],
-   "outils": []
   }
  }
 }
